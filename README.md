@@ -13,3 +13,119 @@
 6. If the server starts successfully, you will see a "User service server listening on ..." message.
 
 ### Complete User Service Guide: [User Service Guide](./user-service/README.md)
+
+
+## Pre-requisites
+Install Docker
+https://www.docker.com/products/docker-desktop/
+
+## Frontend
+### Installation
+Install the dependencies:
+```bash
+npm install
+```
+
+### Development
+Start the development server with HMR:
+```bash
+npm run dev
+```
+
+#### Linting & Formatting
+Run ESLint to check for code quality issues:
+```bash
+npx eslint . --fix
+```
+
+Run Prettier to format the code:
+```bash
+npx prettier --write .
+```
+
+### Mock Data (Simulating API Calls)
+#### Using `json-server`
+A `json-server` is included in the **dev dependencies** for simulating API calls.
+To seed mock data, create a file at:
+```sh
+$PROJECT_DIR/frontend/data/db.json
+```
+
+#### Example `db.json` (Randomly Generated Data)
+```json
+{
+  "questions": [
+    {
+      "id": "1",
+      "title": "Find the Missing Number",
+      "description": "Given an array containing...",
+      "categories": ["Math", "Sorting"],
+      "complexity": "Medium"
+    },
+    {
+      "id": "2",
+      "title": "Robot Movement Path",
+      "description": "A robot can move up, down, left, or right...",
+      "categories": ["Strings", "Simulation"],
+      "complexity": "Easy"
+    }
+  ]
+}
+```
+
+#### Running `json-server`
+To start the mock API server, run:
+```sh
+npx json-server --watch data/db.json --port 5000 --routes ./json-server-routes.json
+```
+This will expose RESTful endpoints at `http://localhost:5000/api/questions`.
+
+🔗 More details: [json-server](https://www.npmjs.com/package/json-server)
+
+
+## Database
+Ensure your are at root level of project to run docker compose
+```
+docker compose up -d  
+```
+Data should be store in docker volume. This should clear any cache and reintialise sample 20 questions of data
+```
+docker compose down -v
+docker compose up -d  
+```
+Sample DB commands
+```
+docker exec -it mongo_db mongosh -u root -p example
+use peerPrepDB
+db.questions.find().limit(1)
+```
+
+## Backend
+Head to backend folder
+```
+cd backend
+```
+Install dependencies
+```
+npm install 
+ ```
+Run the server
+```
+npm run dev
+ ```
+### Sample Test
+Create question
+```
+curl -X POST -H "Content-Type: application/json" -d '{
+"title": "Reverse String",
+"description": "Write a function that reverses a string...",
+"category": ["Strings", "Algorithms"],
+"complexity": "Easy",
+"link": "https://leetcode.com/problems/reverse-string"
+}' http://localhost:4000/api/questions
+```
+Filter questions by complexity
+```
+curl "http://localhost:4000/api/questions?complexity=Easy"
+```
+
