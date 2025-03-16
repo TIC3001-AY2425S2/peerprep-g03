@@ -143,5 +143,5 @@ curl "http://localhost:4000/api/questions?complexity=Easy"
 5. Start the User Service with `npm start` or `npm run dev`.
 6. If the server starts successfully, you will see a "User service server listening on ..." message.
 
-### Complete User Service Guide: [User Service Guide](./user-service/README.md)
+### Complete User Service Guide: [User Service Guide](backend/src/user-service/README.md)
 
