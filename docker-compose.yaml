@@ -15,18 +15,33 @@ services:
     networks:
       - app_network
 
-  backend:
+  question-service:
     build:
-      context: ./backend
-    container_name: peerprep_backend
+      context: ./backend/src/question-service
     ports:
       - "4000:4000"
     volumes:
-      - ./backend:/app
+      - ./backend/src/question-service:/app
       - /app/node_modules
     environment:
       - MONGODB_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
       - PORT=4000
+    depends_on:
+      - mongo
+    networks:
+      - app_network
+
+  user-service:
+    build:
+      context: ./backend/src/user-service
+    ports:
+      - "4001:4001"
+    volumes:
+      - ./backend/src/user-service:/app
+      - /app/node_modules
+    environment:
+      - DB_LOCAL_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+      - PORT=4001
     depends_on:
       - mongo
     networks:
@@ -42,7 +57,7 @@ services:
       - ./frontend:/app
       - /app/node_modules
     depends_on:
-      - backend
+      - question-service
     networks:
       - app_network
 

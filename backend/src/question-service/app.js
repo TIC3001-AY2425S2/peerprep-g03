@@ -2,7 +2,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import cors from 'cors';
-import questionRoutes from './question-service/routes/questions.js';
+import questionRoutes from './routes/questions.js';
 
 dotenv.config();
 
