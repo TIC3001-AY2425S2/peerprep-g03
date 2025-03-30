@@ -48,14 +48,20 @@ services:
       - app_network
 
   frontend:
+    container_name: peerprep_frontend
     build:
       context: ./frontend
-    container_name: peerprep_frontend
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: package.json
     ports:
       - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     depends_on:
       - question-service
     networks:
