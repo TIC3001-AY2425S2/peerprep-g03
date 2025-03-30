@@ -47,6 +47,22 @@ services:
     networks:
       - app_network
 
+  collab-service:
+    build:
+      context: ./backend/src/collab-service
+    ports:
+      - "4002:4002"
+    volumes:
+      - ./backend/src/collab-service:/app
+      - /app/node_modules
+    environment:
+      - DB_LOCAL_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+      - PORT=4002
+    depends_on:
+      - mongo
+    networks:
+      - app_network
+
   frontend:
     build:
       context: ./frontend
