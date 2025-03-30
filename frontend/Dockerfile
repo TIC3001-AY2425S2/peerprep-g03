@@ -21,13 +21,19 @@
 #WORKDIR /app
 #CMD ["npm", "run", "start"]
 
-FROM node:20
+# Base image
+FROM node:22.14
 
+# Set working directory
 WORKDIR /app
 
-COPY . .
+# Install dependencies
+COPY package.json package-lock.json ./
 RUN npm install
 
-EXPOSE 5173
+# Copy application source code
+COPY . .
 
-CMD ["npm", "run", "dev", "--host", "0.0.0.0"]
+# Runtime configuration
+EXPOSE 5173
+CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
