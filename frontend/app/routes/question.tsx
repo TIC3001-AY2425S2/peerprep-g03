@@ -1,4 +1,6 @@
+import ProtectedRoute from "~/components/common/ProtectedRoute";
 import QuestionContent from "../pages/QuestionContent";
+
 export function meta() {
   return [
     { title: "Questions | PeerPrep" },
@@ -7,5 +9,9 @@ export function meta() {
 }
 
 export default function Question() {
-  return <QuestionContent />;
+  return (
+    <ProtectedRoute>
+      <QuestionContent />
+    </ProtectedRoute>
+  );
 }
