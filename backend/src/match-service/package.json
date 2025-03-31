@@ -12,10 +12,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "amqplib": "^0.10.7",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
-    "ws": "^8.18.1",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "ws": "^8.18.1"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
