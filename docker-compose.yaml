@@ -15,6 +15,40 @@ services:
     networks:
       - app_network
 
+  rabbitmq:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: root
+      RABBITMQ_DEFAULT_PASS: example
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - app_network
+    healthcheck:
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  matching-service:
+    build: ./backend/src/match-service
+    environment:
+      - RABBITMQ_URL=amqp://root:example@rabbitmq:5672
+      - MONGODB_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+    ports:
+      - "8080:8080"
+    depends_on:
+      rabbitmq:
+          condition: service_healthy
+    networks:
+      - app_network
+
   question-service:
     build:
       context: ./backend/src/question-service
@@ -73,3 +107,4 @@ networks:
 
 volumes:
   mongo_data:
+  rabbitmq_data:
