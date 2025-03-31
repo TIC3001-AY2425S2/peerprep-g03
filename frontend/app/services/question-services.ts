@@ -21,6 +21,20 @@ export const fetchQuestionById = async (id: number): Promise<Question> => {
 };
 
 /**
+ * Fetch all unique categories from the list of questions
+ */
+export const fetchQuestionCategories = async (): Promise<string[]> => {
+  const allQuestions = await fetchQuestions();
+  const categoriesSet = new Set<string>();
+
+  allQuestions.forEach((q) => {
+    q.categories.forEach((cat) => categoriesSet.add(cat));
+  });
+
+  return Array.from(categoriesSet);
+};
+
+/**
  * Add a new question
  */
 export const createQuestion = async (newQuestion: Omit<Question, "id">) => {
