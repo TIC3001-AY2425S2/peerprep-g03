@@ -1,3 +1,4 @@
+import ProtectedRoute from "~/components/common/ProtectedRoute";
 import HomeContent from "../pages/HomeContent";
 
 export function meta() {
@@ -8,5 +9,9 @@ export function meta() {
 }
 
 export default function Home() {
-  return <HomeContent />;
+  return (
+    <ProtectedRoute>
+      <HomeContent />
+    </ProtectedRoute>
+  );
 }

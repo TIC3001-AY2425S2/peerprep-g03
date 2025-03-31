@@ -64,11 +64,13 @@ export default function QuestionContent() {
       let updatedQuestions;
       if (selectedQuestion) {
         // Update existing question
-        const retrievedQn = await updateQuestion(selectedQuestion._id, newQuestion);
+        const retrievedQn = await updateQuestion(
+          selectedQuestion._id,
+          newQuestion
+        );
         updatedQuestions = questions.map((q) =>
           q._id === retrievedQn._id ? retrievedQn : q
         );
-
       } else {
         // Create new question
         const createdQuestion = await createQuestion(newQuestion);
@@ -88,7 +90,7 @@ export default function QuestionContent() {
   const handleDeleteQuestion = async (id: string) => {
     setLoading(true);
     try {
-      const deletedQuestion = await deleteQuestion(id);
+      await deleteQuestion(id);
       const updatedQuestions = questions.filter((q) => q._id !== id);
       setQuestions(updatedQuestions);
       setFilteredQuestions(updatedQuestions);
