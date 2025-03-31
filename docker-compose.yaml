@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   mongo:
     image: mongo:latest
@@ -30,7 +29,7 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
       interval: 10s
       timeout: 5s
       retries: 5
