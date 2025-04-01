@@ -147,7 +147,17 @@ export default function ProfileContent() {
                   label="New Password"
                   name="password"
                   hasFeedback
-                  rules={[{ min: 6, message: "Minimum 6 characters required" }]}
+                  rules={[
+                    { required: true, message: "Please enter your password" },
+                    { 
+                      min: 12, 
+                      message: "Minimum 12 characters required" 
+                    },
+                    {
+                      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$/,
+                      message: "Your password is too weak",
+                    },
+                  ]}
                   style={{ marginBottom: 12 }}
                 >
                   <Input.Password />

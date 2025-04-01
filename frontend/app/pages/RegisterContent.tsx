@@ -76,7 +76,14 @@ const RegisterContent: React.FC = () => {
           name="password"
           rules={[
             { required: true, message: "Please enter your password" },
-            { min: 6, message: "Minimum 6 characters required" },
+            { 
+              min: 12, 
+              message: "Minimum 12 characters required" 
+            },
+            {
+              pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$/,
+              message: "Your password is too weak",
+            },
           ]}
         >
           <Input.Password
