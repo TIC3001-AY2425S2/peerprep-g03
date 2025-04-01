@@ -86,3 +86,33 @@ export const updateUser = async (
     };
   }
 };
+
+export const deleteUser = async (userId: string, token: string) => {
+  try {
+    const response = await axios.delete(`${API_ENDPOINTS.USERS}/${userId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (response.status === 200 && response.data) {
+      return {
+        success: true,
+        data: response.data.data,
+        message: response.data.message || "User deleted successfully",
+      };
+    } else {
+      return {
+        success: false,
+        data: null,
+        message: response.data?.message || "Unexpected response format",
+      };
+    }
+  } catch (error: unknown) {
+    const err = error as AxiosError<{ message?: string }>;
+    const message =
+      err?.response?.data?.message || err.message || "Something went wrong";
+
+    return { success: false, data: null, message };
+  }
+}

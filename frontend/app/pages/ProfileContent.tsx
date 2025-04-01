@@ -9,17 +9,19 @@ import {
   Spin,
   Typography,
   message,
+  Popconfirm
 } from "antd";
+import type { PopconfirmProps } from 'antd';
 import { useEffect, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
-import { getUserById, updateUser } from "../services/user-services";
+import { getUserById, updateUser, deleteUser } from "../services/user-services";
 import type { UserProfile } from "../types/UserProfile";
 import { getToken } from "../utils/auth-utils";
 
 const { Title, Text } = Typography;
 
 export default function ProfileContent() {
-  const { userSession, isAuthInitialized } = useAuth();
+  const { userSession, isAuthInitialized, logoutUser } = useAuth();
   const userId = userSession?.id;
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -83,8 +85,32 @@ export default function ProfileContent() {
     const isAllFieldsFilled = Object.values(values).every(value => {
       return value !== '' && value.trim() !== '' && value !== null && value !== undefined;
     });
-    
+
     setFormValid(isAllFieldsFilled);
+  };
+
+  const handleDeleteAcct: PopconfirmProps['onConfirm'] = async () => {
+    try {
+      const token = getToken();
+      if (!userId || !token) throw new Error("Missing userId or token");
+
+      const result = await deleteUser(userId, token);
+      console.log("delete result ", result);
+      if (result.success) {
+        message.success("Account deleted successfully");
+        logoutUser();
+      } else {
+        message.error(result.message || "Failed to delete account");
+      }
+    } catch (err) {
+      console.error(err);
+      message.error("Something went wrong while deleting the account.");
+    }
+  };
+
+  const handleCancelDelete: PopconfirmProps['onCancel'] = (e) => {
+    console.log(e);
+    message.error('Account deletion was cancelled');
   };
 
   useEffect(() => {
@@ -214,9 +240,22 @@ export default function ProfileContent() {
                   <Button onClick={handleCancel}>Cancel</Button>
                 </Space>
               ) : (
-                <Button type="primary" onClick={() => setEditing(true)}>
-                  Edit Profile
-                </Button>
+                <Space>
+                  <Button type="primary" onClick={() => setEditing(true)}>
+                    Edit Profile
+                  </Button>
+
+                  <Popconfirm
+                    title="Delete Account"
+                    description="Are you sure to delete your account?"
+                    onConfirm={handleDeleteAcct}
+                    onCancel={handleCancelDelete}
+                    okText="Yes"
+                    cancelText="No"
+                    >
+                    <Button danger >Delete Account</Button>
+                  </Popconfirm>
+                </Space>
               )}
             </Form.Item>
           </Form>
