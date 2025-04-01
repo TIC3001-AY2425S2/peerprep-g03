@@ -6,7 +6,7 @@ let channel = null
 
 export const getConnection = ()=> connection;
 export const getChannel = () => channel;
-
+const sleep = (ms) => new Promise (resolve => setTimeout(resolve, ms));
 export const connect = async (retries = 5, retryDelay = 5000) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
