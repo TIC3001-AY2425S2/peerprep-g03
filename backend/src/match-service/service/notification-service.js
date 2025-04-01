@@ -1,8 +1,11 @@
 import clientStore from '../store/clientStore.js';
 import {WebSocketStatus} from "../constants/websocket.js";
+import {getRandomQuestion} from "./client-service.js";
+import {randomUUID} from 'crypto'
 
-export const notifyMatchFound = (userId1, userId2, topic, difficulty) => {
+export const notifyMatchFound = async (userId1, userId2, topic, difficulty) => {
     console.log(`Notifying users ${userId1} and ${userId2} of match details`);
+    const questionId = await getRandomQuestion(topic, difficulty);
     [userId1, userId2].forEach(userId => {
         const ws = clientStore.get(userId);
         if (ws && ws.readyState == WebSocketStatus.OPEN) {
@@ -12,7 +15,9 @@ export const notifyMatchFound = (userId1, userId2, topic, difficulty) => {
                     match: {
                         userId: userId === userId1 ? userId2 : userId1,
                         topic,
-                        difficulty
+                        difficulty,
+                        sessionId : randomUUID(),
+                        questionId : questionId
                     }
 
                 }), (error) => {

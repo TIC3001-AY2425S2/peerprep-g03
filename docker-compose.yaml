@@ -1,4 +1,3 @@
-version: '3.8'
 services:
   mongo:
     image: mongo:latest
@@ -41,11 +40,12 @@ services:
     environment:
       - RABBITMQ_URL=amqp://root:example@rabbitmq:5672
       - MONGODB_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+      - QUESTION_SERVICE_URL=http://question-service:4000
     ports:
       - "8080:8080"
     depends_on:
-      rabbitmq:
-          condition: service_healthy
+      - rabbitmq
+      - question-service
     networks:
       - app_network
 

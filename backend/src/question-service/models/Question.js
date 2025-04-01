@@ -16,7 +16,6 @@ const questionSchema = new mongoose.Schema({
         required: true,
         enum: ['Easy', 'Medium', 'Hard']
     }
-    //link: { type: String, required: true }
 });
 
 const Question = mongoose.model('Question', questionSchema);

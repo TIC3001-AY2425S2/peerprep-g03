@@ -1,7 +1,6 @@
 {
-  "name": "backend",
+  "name": "match-service",
   "version": "1.0.0",
-  "description": "",
   "type": "module",
   "scripts": {
     "start": "node server.js",
@@ -16,9 +15,13 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "ws": "^8.18.1",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "crypto-js": "^4.2.0",
+    "axios": "^1.8.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
-  }
+  },
+  "main": "server.js",
+  "description": ""
 }

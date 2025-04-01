@@ -70,3 +70,46 @@ export const deleteQuestion = async (req, res) => {
         res.status(500).json({success: false, message: "Server Error!"});
     }
 };
+
+export const getRandomQuestion = async (req, res) => {
+    try {
+        const { complexity, categories } = req.query;
+        const matchStage = {};
+
+        //Filter condition
+        if (complexity) {
+            matchStage.complexity = complexity;
+        }
+        if (categories) {
+            const categoriesArray = categories.split(',');
+            matchStage.categories = { $all: categoriesArray };
+        }
+
+        //Execute query
+        const randomQuestion = await Question.aggregate([
+            { $match: matchStage },
+            { $sample: { size: 1 } }
+        ]);
+
+        if (!randomQuestion.length) {
+            return res.status(404).json({
+                success: false,
+                message: "No questions found matching the criteria"
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            data: randomQuestion[0]
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: "Server Error"
+        });
+    }
+};
+
+
+
