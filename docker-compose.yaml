@@ -1,0 +1,109 @@
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./local/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: peerPrepDB
+    networks:
+      - app_network
+
+  rabbitmq:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: root
+      RABBITMQ_DEFAULT_PASS: example
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - app_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  matching-service:
+    build: ./backend/src/match-service
+    environment:
+      - RABBITMQ_URL=amqp://root:example@rabbitmq:5672
+      - MONGODB_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+    ports:
+      - "8080:8080"
+    depends_on:
+      rabbitmq:
+          condition: service_healthy
+    networks:
+      - app_network
+
+  question-service:
+    build:
+      context: ./backend/src/question-service
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend/src/question-service:/app
+      - /app/node_modules
+    environment:
+      - MONGODB_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+      - PORT=4000
+    depends_on:
+      - mongo
+    networks:
+      - app_network
+
+  user-service:
+    build:
+      context: ./backend/src/user-service
+    ports:
+      - "4001:4001"
+    volumes:
+      - ./backend/src/user-service:/app
+      - /app/node_modules
+    environment:
+      - DB_LOCAL_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+      - PORT=4001
+    depends_on:
+      - mongo
+    networks:
+      - app_network
+
+  frontend:
+    container_name: peerprep_frontend
+    build:
+      context: ./frontend
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./frontend/package.json
+    ports:
+      - "5173:5173"
+    depends_on:
+      - question-service
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+  rabbitmq_data:

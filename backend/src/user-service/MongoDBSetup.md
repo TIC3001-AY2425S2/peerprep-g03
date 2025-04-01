@@ -18,7 +18,7 @@
 9. Click on `Create` to deploy the cluster. A security quickstart wizard will appear. \
 10. You will be prompted to set up Security for the database by providing `Username and Password`. Select that option and enter `Username` and `Password`. Please keep this safe as it will be used in User Service later on.
 
-![alt text](./GuideAssets/Security.png)
+![alt text](GuideAssets/Security.png)
 
 11. Next, click on `Add my Current IP Address`. This will whitelist your IP address and allow you to connect to the MongoDB Database.
 
@@ -32,6 +32,6 @@
 
 3. Select the `ALLOW ACCESS FROM ANYWHERE` Button and Click `Confirm`
 
-![alt text](./GuideAssets/IPWhitelisting.png)
+![alt text](GuideAssets/IPWhitelisting.png)
 
 Now, any IP Address can access this Database.
