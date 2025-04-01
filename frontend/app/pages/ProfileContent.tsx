@@ -26,6 +26,7 @@ export default function ProfileContent() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [form] = Form.useForm();
+  const [formValid, setFormValid] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -76,6 +77,16 @@ export default function ProfileContent() {
     setEditing(false);
   };
 
+  const handleFormChange = () => {
+    const values = form.getFieldsValue();
+
+    const isAllFieldsFilled = Object.values(values).every(value => {
+      return value !== '' && value.trim() !== '' && value !== null && value !== undefined;
+    });
+    
+    setFormValid(isAllFieldsFilled);
+  };
+
   useEffect(() => {
     if (userId) fetchProfile();
   }, [userId]);
@@ -119,7 +130,7 @@ export default function ProfileContent() {
         </Col>
 
         <Col span={24} md={17}>
-          <Form layout="vertical" form={form} initialValues={profile}>
+          <Form layout="vertical" form={form} initialValues={profile} onValuesChange={handleFormChange}>
             <Form.Item
               label="Username"
               name="username"
@@ -148,7 +159,7 @@ export default function ProfileContent() {
                   name="password"
                   hasFeedback
                   rules={[
-                    { required: true, message: "Please enter your password" },
+                    { required: true, message: "Please enter your new password" },
                     { 
                       min: 12, 
                       message: "Minimum 12 characters required" 
@@ -197,7 +208,7 @@ export default function ProfileContent() {
             <Form.Item style={{ marginTop: 20, textAlign: "right" }}>
               {editing ? (
                 <Space>
-                  <Button type="primary" onClick={handleSave}>
+                  <Button type="primary" onClick={handleSave} disabled={!formValid}>
                     Save Changes
                   </Button>
                   <Button onClick={handleCancel}>Cancel</Button>
