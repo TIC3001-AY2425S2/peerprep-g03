@@ -17,7 +17,8 @@
     "ws": "^8.18.1",
     "express": "^4.19.2",
     "crypto-js": "^4.2.0",
-    "axios": "^1.8.4"
+    "axios": "^1.8.4",
+    "redis": "^4.7.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.9"

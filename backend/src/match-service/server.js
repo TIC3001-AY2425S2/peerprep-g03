@@ -2,6 +2,8 @@ import http from 'http';
 import { app, wss } from './app.js';
 import {initializeMatchService} from './controller/match-controller.js';
 import { WS_PATH } from './constants/websocket.js';
+import './service/subscription-service.js';
+
 
 
 const server = http.createServer(app);

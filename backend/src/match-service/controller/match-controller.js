@@ -49,11 +49,8 @@ const initializeMatchService = async () => {
     return connection;
 };
 
-const getClients = () => clientStore.getAll();
-
 export {
     handleConnection,
     handleMessage,
-    initializeMatchService,
-    getClients
+    initializeMatchService
 };

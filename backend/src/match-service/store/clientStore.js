@@ -3,7 +3,6 @@ const createClientStore = () => {
 
     return{
         get: (userId) => clients.get(userId),
-        getAll:() => clients,
         set: (userId, ws) => {
             clients.set(userId, ws);
             return clients;

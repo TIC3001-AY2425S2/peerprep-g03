@@ -1,10 +1,8 @@
 import { getChannel } from '../clients/rabbitmq/connection.js';
-import matchStore from '../store/matchStore.js';
-import clientStore from '../store/clientStore.js';
 import { isMatch } from '../utils/matchUtils.js';
 import { notifyMatchFound, notifyMatchTimeout } from './notification-service.js';
 import { RABBITMQ_CONFIG } from '../clients/rabbitmq/config.js';
-
+import { redisPromise } from '../clients/redis/config.js';
 export const initConsumers = () => {
     const channel = getChannel();
     if (!channel) throw new Error('Channel not initialized');
@@ -27,71 +25,78 @@ export const initConsumers = () => {
     channel.consume(RABBITMQ_CONFIG.QUEUES.EXPIRED, processExpiredMatch, { noAck: false });
 
     console.log('All consumers initialized');
-
-    setInterval(() => matchStore.cleanupStaleMatches(), RABBITMQ_CONFIG.CLEANUP_INTERVAL);
 };
 
 const processQueueMessage = async (msg, queueType) => {
-    if (!msg) return;
     const channel = getChannel();
+    if (!msg) return;
 
     try {
+        const { command } = await redisPromise;
         const content = JSON.parse(msg.content.toString());
         const { userId, topic, difficulty } = content;
 
-        console.log(`Processing ${queueType} message for user ${userId}`);
+        const userKey = `match:${queueType}:${userId}`;
+        const userSetKey = `match:${queueType}:users`;
 
-        if (!clientStore || !clientStore.has(userId)) {
-            console.log(`User ${userId} is no longer connected, acknowledging message`);
-            channel.ack(msg);
-            return;
-        }
+        // Add user to tracking set and store data
+        await command.multi()
+            .sAdd(userSetKey, userId)
+            .setEx(userKey, RABBITMQ_CONFIG.TTL/1000, JSON.stringify(content))
+            .exec();
 
-        let matchFound = false;
-        const queueMatches = matchStore.getAllMatch(queueType);
+        // Wait for new data for matching using event driven method by watching the redis matches for new records
+        while (true) {
+            try {
+                await command.WATCH(userKey, userSetKey);
 
-        for (const [candidateId, candidateData] of queueMatches.entries()) {
-            // Skip self-match
-            if (candidateId === userId) continue;
+                const candidates = await command.sMembers(userSetKey);
+                const otherUsers = candidates.filter(id => id !== userId);
 
-            if (isMatch(content, candidateData, queueType)) {
-                console.log(`Match found in ${queueType} between ${userId} and ${candidateId}`);
-                matchStore.removeMatch(queueType, candidateId);
-                notifyMatchFound(userId, candidateId, topic, difficulty);
+                if (otherUsers.length === 0) {
+                    await command.UNWATCH();
+                    break;
+                }
 
-                channel.ack(msg);
-                channel.ack(candidateData.msg);
+                const [candidateId] = otherUsers;
+                const candidateKey = `match:${queueType}:${candidateId}`;
+                const candidateData = JSON.parse(await command.get(candidateKey));
 
-                matchFound = true;
-                break;
+                if (isMatch(content, candidateData, queueType)) {
+                    await command.multi()
+                        .sRem(userSetKey, userId)
+                        .sRem(userSetKey, candidateId)
+                        .del(userKey, candidateKey)
+                        .exec();
+
+                    await notifyMatchFound(userId, candidateId, topic, difficulty);
+                    channel.ack(msg);
+                    channel.ack(candidateData.msg);
+                    return;
+                }
+
+                await command.UNWATCH();
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (error) {
+                if (error instanceof WatchError) continue;
+                throw error;
             }
         }
-
-        if (!matchFound) {
-            console.log(`No immediate match for ${userId} in ${queueType}, adding to active matches`);
-            matchStore.addMatch(queueType, userId, { userId, topic, difficulty, msg });
-        }
     } catch (error) {
-        console.error(`Error processing message in ${queueType}:`, error);
+        console.error(`Error processing message:`, error);
         channel.nack(msg, false, false);
     }
 };
 
-const processExpiredMatch = (msg) => {
-    if (!msg) return;
-    const channel = getChannel();
 
+const processExpiredMatch = async (userId) => {
+    if (!userId) return;
     try {
-        const content = JSON.parse(msg.content.toString());
-        const { userId } = content;
-
         console.log(`Processing expired match for user ${userId}`);
-        matchStore.removeFromAll(userId);
         notifyMatchTimeout(userId);
-
-        channel.ack(msg);
     } catch (error) {
         console.error('Error processing expired match:', error);
-        channel.ack(msg);
     }
 };
+
+export { processExpiredMatch };

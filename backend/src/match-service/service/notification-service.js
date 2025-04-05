@@ -6,7 +6,8 @@ import {randomUUID} from 'crypto'
 export const notifyMatchFound = async (userId1, userId2, topic, difficulty) => {
     console.log(`Notifying users ${userId1} and ${userId2} of match details`);
     const questionId = await getRandomQuestion(topic, difficulty);
-    [userId1, userId2].forEach(userId => {
+    const sessionId = randomUUID();
+    await Promise.all([userId1, userId2].forEach(userId => {
         const ws = clientStore.get(userId);
         if (ws && ws.readyState == WebSocketStatus.OPEN) {
             try {
@@ -16,7 +17,7 @@ export const notifyMatchFound = async (userId1, userId2, topic, difficulty) => {
                         userId: userId === userId1 ? userId2 : userId1,
                         topic,
                         difficulty,
-                        sessionId : randomUUID(),
+                        sessionId : sessionId,
                         questionId : questionId
                     }
 
@@ -35,7 +36,7 @@ export const notifyMatchFound = async (userId1, userId2, topic, difficulty) => {
             console.warn(`Cannot send to user ${userId} as connection is not open`);
             clientStore.delete(userId);
         }
-    });
+    }));
 };
 
 export const notifyMatchTimeout = (userId) => {

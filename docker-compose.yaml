@@ -35,17 +35,36 @@ services:
       retries: 5
       start_period: 30s
 
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--requirepass", "example"]
+    ports:
+      - "6379:6379"
+    environment:
+      - REDIS_PASSWORD=example
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    networks:
+      - app_network
+
   matching-service:
     build: ./backend/src/match-service
     environment:
       - RABBITMQ_URL=amqp://root:example@rabbitmq:5672
       - MONGODB_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
       - QUESTION_SERVICE_URL=http://question-service:4000
+      - REDIS_URL=redis://:example@redis:6379
     ports:
       - "8080:8080"
     depends_on:
       - rabbitmq
       - question-service
+      - redis
     networks:
       - app_network
 
@@ -86,3 +105,4 @@ networks:
 volumes:
   mongo_data:
   rabbitmq_data:
+  redis_data:
