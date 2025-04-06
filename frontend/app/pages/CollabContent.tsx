@@ -5,6 +5,8 @@ import { io, Socket } from "socket.io-client";
 import { useParams } from "react-router";
 
 
+const SAVE_INTERVAL_MS = 2000;
+
 export default function CollabContent() {
     const [value, setValue] = useState('')
     const [socket, setSocket] = useState<Socket | null>(null)
@@ -25,6 +27,20 @@ export default function CollabContent() {
        if(!socket || !isTyping) return;
        socket.emit("send-changes", value);
     }, [value])
+
+    useEffect(()=> {
+        if(!socket) return;
+
+        const interval = setInterval(() => {
+            socket.emit('save-data', value);
+        }, SAVE_INTERVAL_MS)
+
+        return () => {
+            clearInterval(interval);
+        }
+
+    }, [socket, value])
+    
 
     useEffect(()=>{
         if(!socket) return;
