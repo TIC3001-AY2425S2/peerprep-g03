@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 import http from 'http';
 import mongoose from 'mongoose';
 import Collab from './models/Collab.js';
+import { createNewOrJoinCollabSession, saveSessionData } from './controller/collab-controller.js';
 
 dotenv.config();
 
@@ -30,7 +31,7 @@ io.on("connection", (socket) => {
 
     socket.on("get-collab", async collabId => {
         
-        const collab = await findOrCreateCollabData(collabId);
+        const collab = await createNewOrJoinCollabSession(collabId);
         socket.join(collabId);
         socket.emit("load-collab", collab.data);
 
@@ -39,21 +40,21 @@ io.on("connection", (socket) => {
         })
 
         socket.on("save-data", async saveData =>  {
-            const updatedCollab = await Collab.findByIdAndUpdate(collabId, {data: saveData}, { new: true });
+            const updatedCollab = saveSessionData(collabId, saveData);
         })
     })
     
     socket.on("disconnect", () => {
-        console.log("A user disconencted", socket.id);
+        console.log("A user disconnected", socket.id);
     })
 })
 
-async function findOrCreateCollabData(id) {
-    if(id == null) return;
-    const collabData = await Collab.findById(id);
-    if(collabData) return  collabData;
-    return await Collab.create({ _id: id, data: DEFAULT_DATA});
-}
+// async function findOrCreateCollabData(id) {
+//     if(id == null) return;
+//     const collabData = await Collab.findById(id);
+//     if(collabData) return  collabData;
+//     return await Collab.create({ _id: id, data: DEFAULT_DATA});
+// }
 
 app.use(cors());
 app.use(express.json());

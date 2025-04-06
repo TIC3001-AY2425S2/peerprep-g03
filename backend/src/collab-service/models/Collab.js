@@ -8,6 +8,12 @@ const collabSchema = new mongoose.Schema({
     data: {
         type: String,
     },
+    userId: {
+        type: String,
+    },
+    questionId : {
+        type: String,
+    }
     //may add question id and user id in this later on, data type may consider to change to object if we are not using String (?)
 });
 
