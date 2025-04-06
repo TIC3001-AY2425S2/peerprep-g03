@@ -7,4 +7,5 @@ export default [
   route("profile", "routes/profile.tsx"),
   route("question", "routes/question.tsx"),
   route("match", "routes/match.tsx"),
+  route("collab/:id", "routes/collab.tsx"),
 ] satisfies RouteConfig;
