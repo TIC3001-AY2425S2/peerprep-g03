@@ -8,10 +8,14 @@ import { useParams } from "react-router";
 const SAVE_INTERVAL_MS = 2000;
 
 export default function CollabContent() {
+    //value is the code data
     const [value, setValue] = useState('')
     const [socket, setSocket] = useState<Socket | null>(null)
-    const {id:collabId} = useParams();
+    //const {id:collabId} = useParams();
+    //this suppose to be the session id
+    const collabId = "123";
     const [isTyping, setIsTyping] = useState(false); //track user input
+    const [status, setStatus] = useState(false);
 
     console.log(collabId);
 
@@ -48,7 +52,16 @@ export default function CollabContent() {
             setValue(collabValue);
         });
         socket.emit("get-collab", collabId);
+
+        
     }, [socket, collabId])
+
+    useEffect(()=>{
+        if(!socket) return;
+        socket.on("receive-end-session", (data) => {
+            alert(`User ${data} have decided to leave the session`);
+        })
+    }, [socket])
 
     useEffect(() => {
         if(!socket) return;
@@ -66,18 +79,34 @@ export default function CollabContent() {
         }
 
      }, [socket, isTyping])
+
+     useEffect(() => {
+        if(!socket) return;
+
+        if(status == true){
+            socket.emit("send-status", collabId);
+        }
+     }, [socket, status])
     
+     const endSession = () => {
+        if(!socket) return;
+        socket.emit("send-end-session", socket.id);
+    }
     
   return (
-    <Input.TextArea
-        placeholder="Enter your code here"
-        rows={23}
-        onChange={(e) => {
-            setIsTyping(true)
-            setValue(e.target.value)
-            setTimeout(() => setIsTyping(false), 500)
-        }}
-        value={value}
-    />
+    <div className='App'>
+        <Input.TextArea
+            placeholder="Enter your code here"
+            rows={23}
+            onChange={(e) => {
+                setIsTyping(true)
+                setValue(e.target.value)
+                setTimeout(() => setIsTyping(false), 500)
+            }}
+            value={value}
+         />
+        <Button onClick= {endSession}>End Session</Button>
+    </div>
+    
   )
 }

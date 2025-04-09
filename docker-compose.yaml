@@ -89,7 +89,7 @@ services:
       - ./backend/src/collab-service:/app
       - /app/node_modules
     environment:
-      - DB_LOCAL_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+      - MONGODB_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
       - PORT=4002
     depends_on:
       - mongo

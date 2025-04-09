@@ -18,7 +18,7 @@ export default function HomeContent() {
               Start Practicing
             </button>
           </Link>
-          <Link to="/collab/123">
+          <Link to="/collab">
             <button className="px-5 py-2 text-md font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
               Collab
             </button>
