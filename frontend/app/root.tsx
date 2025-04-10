@@ -8,6 +8,7 @@ import {
 } from "react-router";
 
 import type { Route } from "./+types/root";
+import { AuthProvider } from "./contexts/AuthContext";
 import MainLayout from "./layouts/MainLayout";
 import "./styles/app.css";
 import { themeConfig } from "./styles/theme";
@@ -46,7 +47,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <ConfigProvider theme={themeConfig}>
-      <MainLayout />
+      <AuthProvider>
+        <MainLayout />
+      </AuthProvider>
     </ConfigProvider>
   );
 }

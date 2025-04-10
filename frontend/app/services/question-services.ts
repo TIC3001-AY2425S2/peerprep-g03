@@ -6,11 +6,8 @@ import type { Question } from "../types/Question";
  * Fetch all questions from the API
  */
 export const fetchQuestions = async (): Promise<Question[]> => {
-  //const response = await axios.get<Question[]>(API_ENDPOINTS.QUESTIONS); //uncomment this and comment the one uncommented if you're using for json server
-  //return response.data;
   const response = await axios.get(API_ENDPOINTS.QUESTIONS);
   return response.data.question;
-  
 };
 
 /**
@@ -21,6 +18,20 @@ export const fetchQuestionById = async (id: number): Promise<Question> => {
     `${API_ENDPOINTS.QUESTIONS}/${id}`
   );
   return response.data;
+};
+
+/**
+ * Fetch all unique categories from the list of questions
+ */
+export const fetchQuestionCategories = async (): Promise<string[]> => {
+  const allQuestions = await fetchQuestions();
+  const categoriesSet = new Set<string>();
+
+  allQuestions.forEach((q) => {
+    q.categories.forEach((cat) => categoriesSet.add(cat));
+  });
+
+  return Array.from(categoriesSet);
 };
 
 /**
@@ -52,5 +63,5 @@ export const updateQuestion = async (
  * Delete a question
  */
 export const deleteQuestion = async (id: string) => {
-  const response = await axios.delete(`${API_ENDPOINTS.QUESTIONS}/${id}`);
+  await axios.delete(`${API_ENDPOINTS.QUESTIONS}/${id}`);
 };

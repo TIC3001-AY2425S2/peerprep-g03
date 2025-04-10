@@ -29,7 +29,7 @@ services:
     networks:
       - app_network
     healthcheck:
-      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -84,15 +84,53 @@ services:
     networks:
       - app_network
 
+  user-service:
+    build:
+      context: ./backend/src/user-service
+    ports:
+      - "4001:4001"
+    volumes:
+      - ./backend/src/user-service:/app
+      - /app/node_modules
+    environment:
+      - DB_LOCAL_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+      - PORT=4001
+    depends_on:
+      - mongo
+    networks:
+      - app_network
+
+  collab-service:
+    build:
+      context: ./backend/src/collab-service
+    ports:
+      - "4002:4002"
+    volumes:
+      - ./backend/src/collab-service:/app
+      - /app/node_modules
+    environment:
+      - MONGODB_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+      - PORT=4002
+    depends_on:
+      - mongo
+    networks:
+      - app_network
+
   frontend:
+    container_name: peerprep_frontend
     build:
       context: ./frontend
-    container_name: peerprep_frontend
+    develop:
+      watch:
+        - action: sync
+          path: ./frontend
+          target: /app
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: ./frontend/package.json
     ports:
       - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
     depends_on:
       - question-service
     networks:

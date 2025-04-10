@@ -1,17 +1,17 @@
 import ProtectedRoute from "~/components/common/ProtectedRoute";
-import QuestionContent from "../pages/QuestionContent";
+import MatchContent from "../pages/MatchContent";
 
 export function meta() {
   return [
-    { title: "Questions | PeerPrep" },
-    { name: "description", content: "Questions | PeerPrep" },
+    { title: "Match | PeerPrep" },
+    { name: "description", content: "Match | PeerPrep" },
   ];
 }
 
 export default function Question() {
   return (
     <ProtectedRoute>
-      <QuestionContent />
+      <MatchContent />
     </ProtectedRoute>
   );
 }

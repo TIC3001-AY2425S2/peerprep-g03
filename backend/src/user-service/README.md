@@ -100,6 +100,12 @@
     | 404 (Not Found)             | User with the specified ID not found                     |
     | 500 (Internal Server Error) | Database or server error                                 |
 
+curl -X POST -H "Content-Type: application/json" -d '{
+"username": "SampleUserName",
+"email": "sample@gmail.com",
+"password": "SecurePassword"
+}' http://localhost:4001/api/users
+
 ### Get All Users
 
 - This endpoint allows retrieval of all users' data from the database.

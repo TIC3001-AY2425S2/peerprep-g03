@@ -18,6 +18,11 @@ export default function HomeContent() {
               Start Practicing
             </button>
           </Link>
+          <Link to="/collab">
+            <button className="px-5 py-2 text-md font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+              Collab
+            </button>
+          </Link>
           <a href="https://react.dev/" target="_blank" rel="noreferrer">
             <button className="px-5 py-2 text-md font-semibold bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition dark:bg-gray-700 dark:text-white dark:hover:bg-gray-600">
               Learn More
