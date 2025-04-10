@@ -1,9 +1,13 @@
 import clientStore from '../store/clientStore.js';
 import {WebSocketStatus} from "../constants/websocket.js";
+import {getRandomQuestion} from "./client-service.js";
+import {randomUUID} from 'crypto'
 
-export const notifyMatchFound = (userId1, userId2, topic, difficulty) => {
+export const notifyMatchFound = async (userId1, userId2, topic, difficulty) => {
     console.log(`Notifying users ${userId1} and ${userId2} of match details`);
-    [userId1, userId2].forEach(userId => {
+    const questionId = await getRandomQuestion(topic, difficulty);
+    const sessionId = randomUUID();
+    await Promise.all([userId1, userId2].forEach(userId => {
         const ws = clientStore.get(userId);
         if (ws && ws.readyState == WebSocketStatus.OPEN) {
             try {
@@ -12,7 +16,9 @@ export const notifyMatchFound = (userId1, userId2, topic, difficulty) => {
                     match: {
                         userId: userId === userId1 ? userId2 : userId1,
                         topic,
-                        difficulty
+                        difficulty,
+                        sessionId : sessionId,
+                        questionId : questionId
                     }
 
                 }), (error) => {
@@ -30,7 +36,7 @@ export const notifyMatchFound = (userId1, userId2, topic, difficulty) => {
             console.warn(`Cannot send to user ${userId} as connection is not open`);
             clientStore.delete(userId);
         }
-    });
+    }));
 };
 
 export const notifyMatchTimeout = (userId) => {
