@@ -11,7 +11,7 @@ const createNewCollab = async (req, res) => {
     }
 
     try{
-        await Collab.create({ _id: collab.id, data: "", userId: collab.userId, questionId: collab.questionId});
+        await Collab.create({ _id: collab.id, data: "", questionId: collab.questionId});
         res.status(200).json({message: "Collab Session successfully created!"});
     } catch(error){
         res.status(500).json({message: "Server error"});
@@ -27,10 +27,11 @@ const joinCollabSession = async (collabId) => {
 
 
 const createNewOrJoinCollabSession = async (collabId) => {
+    console.log(`collab id : ${collabId}`);
     if(collabId == null) return;
     const collabData = await Collab.findById(collabId);
     if(collabData) return collabData;
-    return await Collab.create({ _id: collabId, data: "", userId: "", questionId: "" });
+    return await Collab.create({ _id: collabId, data: "", questionId: "" });
 }
 
 const saveSessionData = async (collabId, saveData) => {
