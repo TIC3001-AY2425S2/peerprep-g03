@@ -1,17 +1,20 @@
 import { LockOutlined, UserOutlined } from "@ant-design/icons";
-import { Button, Form, Input, Space, Typography, message } from "antd";
+import { App, Button, Form, Input, Space, Typography } from "antd";
 import { useState } from "react";
+
 import { Link, useNavigate } from "react-router";
 import { useAuth } from "../contexts/AuthContext";
+import type { LoginPayload } from "../types/User";
 
 const { Title, Text } = Typography;
 
 const LoginContent: React.FC = () => {
+  const { message } = App.useApp();
   const navigate = useNavigate();
   const { loginUser } = useAuth();
   const [loading, setLoading] = useState(false);
 
-  const onFinish = async (values: { email: string; password: string }) => {
+  const onFinish = async (values: LoginPayload) => {
     setLoading(true);
     const result = await loginUser(values);
     setLoading(false);
@@ -77,7 +80,7 @@ const LoginContent: React.FC = () => {
 
         <Space direction="vertical" size="small">
           <Text type="secondary">
-            Don’t have an account? <Link to="/register">Register now</Link>
+            Don&apos;t have an account? <Link to="/register">Register now</Link>
           </Text>
         </Space>
       </Form>

@@ -1,28 +1,29 @@
+import type { PopconfirmProps } from "antd";
 import {
+  App,
   Button,
   Card,
   Col,
   Form,
   Input,
+  Popconfirm,
   Row,
   Space,
   Spin,
   Typography,
-  message,
-  Popconfirm
 } from "antd";
-import type { PopconfirmProps } from 'antd';
 import { useEffect, useState } from "react";
+
 import { useAuth } from "../contexts/AuthContext";
-import { getUserById, updateUser, deleteUser } from "../services/user-services";
-import type { UserProfile } from "../types/UserProfile";
-import { getToken } from "../utils/auth-utils";
+import { deleteUser, getUserById, updateUser } from "../services/user-services";
+import type { UserProfile } from "../types/User";
 
 const { Title, Text } = Typography;
 
 export default function ProfileContent() {
-  const { userSession, isAuthInitialized, logoutUser } = useAuth();
-  const userId = userSession?.id;
+  const { message } = App.useApp();
+  const { jwtPayload: jwtPayload, isAuthInitialized, logoutUser } = useAuth();
+  const userId = jwtPayload?.id;
 
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,17 +32,18 @@ export default function ProfileContent() {
   const [formValid, setFormValid] = useState(false);
 
   const fetchProfile = async () => {
-    try {
-      const token = getToken();
-      if (!userId || !token) throw new Error("Missing token or userId");
+    if (!userId) {
+      message.error("Missing user ID or token.");
+      setLoading(false);
+      return;
+    }
 
-      const result = await getUserById(userId, token);
-      if (result.success) {
-        setProfile(result.data);
-        form.setFieldsValue({
-          username: result.data.username,
-          email: result.data.email,
-        });
+    try {
+      const result = await getUserById(userId);
+      if (result.success && result.data) {
+        const { username, email, createdAt } = result.data;
+        setProfile({ username, email, createdAt });
+        form.setFieldsValue({ username, email });
       } else {
         message.error(result.message || "Failed to load profile.");
       }
@@ -55,11 +57,8 @@ export default function ProfileContent() {
 
   const handleSave = async () => {
     try {
-      const token = getToken();
       const values = await form.validateFields();
-      const { ...payload } = values;
-
-      const result = await updateUser(userId!, payload, token!);
+      const result = await updateUser(userId!, values);
       if (result.success) {
         message.success("Profile updated successfully");
         setEditing(false);
@@ -81,21 +80,19 @@ export default function ProfileContent() {
 
   const handleFormChange = () => {
     const values = form.getFieldsValue();
-
-    const isAllFieldsFilled = Object.values(values).every(value => {
-      return value !== '' && value.trim() !== '' && value !== null && value !== undefined;
+    const isAllFieldsFilled = Object.values(values).every((value) => {
+      return typeof value === "string"
+        ? value.trim() !== ""
+        : value !== null && value !== undefined;
     });
-
     setFormValid(isAllFieldsFilled);
   };
 
-  const handleDeleteAcct: PopconfirmProps['onConfirm'] = async () => {
+  const handleDeleteAccount: PopconfirmProps["onConfirm"] = async () => {
     try {
-      const token = getToken();
-      if (!userId || !token) throw new Error("Missing userId or token");
+      if (!userId) throw new Error("Missing userId or token");
 
-      const result = await deleteUser(userId, token);
-      console.log("delete result ", result);
+      const result = await deleteUser(userId);
       if (result.success) {
         message.success("Account deleted successfully");
         logoutUser();
@@ -108,9 +105,8 @@ export default function ProfileContent() {
     }
   };
 
-  const handleCancelDelete: PopconfirmProps['onCancel'] = (e) => {
-    console.log(e);
-    message.error('Account deletion was cancelled');
+  const handleCancelDelete: PopconfirmProps["onCancel"] = () => {
+    message.info("Account deletion was cancelled");
   };
 
   useEffect(() => {
@@ -144,8 +140,8 @@ export default function ProfileContent() {
       }}
     >
       <Row gutter={32}>
-        <Col span={24} md={7} style={{ marginBottom: 24 }}>
-          <div style={{ paddingLeft: 12 }}>
+        <Col span={24} md={7}>
+          <div style={{ paddingLeft: 12, marginBottom: 24 }}>
             <Title level={4} style={{ marginBottom: 4 }}>
               Profile
             </Title>
@@ -156,11 +152,16 @@ export default function ProfileContent() {
         </Col>
 
         <Col span={24} md={17}>
-          <Form layout="vertical" form={form} initialValues={profile} onValuesChange={handleFormChange}>
+          <Form
+            layout="vertical"
+            form={form}
+            initialValues={profile}
+            onValuesChange={handleFormChange}
+          >
             <Form.Item
               label="Username"
               name="username"
-              rules={[{ message: "Username is required" }]}
+              rules={[{ required: true, message: "Username is required" }]}
               style={{ marginBottom: 12 }}
             >
               <Input disabled={!editing} />
@@ -170,7 +171,7 @@ export default function ProfileContent() {
               label="Email"
               name="email"
               rules={[
-                { message: "Email is required" },
+                { required: true, message: "Email is required" },
                 { type: "email", message: "Invalid email format" },
               ]}
               style={{ marginBottom: 12 }}
@@ -185,13 +186,14 @@ export default function ProfileContent() {
                   name="password"
                   hasFeedback
                   rules={[
-                    { required: true, message: "Please enter your new password" },
-                    { 
-                      min: 12, 
-                      message: "Minimum 12 characters required" 
-                    },
                     {
-                      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$/,
+                      required: true,
+                      message: "Please enter your new password",
+                    },
+                    { min: 12, message: "Minimum 12 characters required" },
+                    {
+                      pattern:
+                        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$/,
                       message: "Your password is too weak",
                     },
                   ]}
@@ -208,8 +210,7 @@ export default function ProfileContent() {
                   rules={[
                     ({ getFieldValue }) => ({
                       validator(_, value) {
-                        const pwd = getFieldValue("password");
-                        if (!pwd || value === pwd) {
+                        if (!value || value === getFieldValue("password")) {
                           return Promise.resolve();
                         }
                         return Promise.reject("Passwords do not match");
@@ -234,7 +235,11 @@ export default function ProfileContent() {
             <Form.Item style={{ marginTop: 20, textAlign: "right" }}>
               {editing ? (
                 <Space>
-                  <Button type="primary" onClick={handleSave} disabled={!formValid}>
+                  <Button
+                    type="primary"
+                    onClick={handleSave}
+                    disabled={!formValid}
+                  >
                     Save Changes
                   </Button>
                   <Button onClick={handleCancel}>Cancel</Button>
@@ -244,16 +249,15 @@ export default function ProfileContent() {
                   <Button type="primary" onClick={() => setEditing(true)}>
                     Edit Profile
                   </Button>
-
                   <Popconfirm
                     title="Delete Account"
                     description="Are you sure to delete your account?"
-                    onConfirm={handleDeleteAcct}
+                    onConfirm={handleDeleteAccount}
                     onCancel={handleCancelDelete}
                     okText="Yes"
                     cancelText="No"
-                    >
-                    <Button danger >Delete Account</Button>
+                  >
+                    <Button danger>Delete Account</Button>
                   </Popconfirm>
                 </Space>
               )}

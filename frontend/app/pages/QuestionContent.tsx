@@ -1,3 +1,4 @@
+import { App } from "antd";
 import type { TablePaginationConfig } from "antd/es/table";
 import { useEffect, useState } from "react";
 
@@ -14,6 +15,7 @@ import type { Question } from "../types/Question";
 import { extractCategories } from "../utils/question-utils";
 
 export default function QuestionContent() {
+  const { message } = App.useApp();
   const [questions, setQuestions] = useState<Question[]>([]);
   const [filteredQuestions, setFilteredQuestions] = useState<Question[]>([]);
   const [selectedQuestion, setSelectedQuestion] = useState<Question | null>(
@@ -37,12 +39,21 @@ export default function QuestionContent() {
   const loadQuestions = async () => {
     setLoading(true);
     try {
-      const data = await fetchQuestions();
-      setQuestions(data);
-      setFilteredQuestions(data);
-      setCategories(extractCategories(data));
+      const result = await fetchQuestions();
+      if (!result.success || !Array.isArray(result.data)) {
+        console.error("Invalid questions data:", result);
+        message.error("Failed to load questions. Please try again.");
+        return;
+      }
+
+      setQuestions(result.data);
+      setFilteredQuestions(result.data);
+      setCategories(extractCategories(result.data));
     } catch (error) {
       console.error("Failed to fetch questions", error);
+      message.error(
+        "An unexpected error occurred. Please refresh and try again."
+      );
     } finally {
       setLoading(false);
     }
@@ -61,20 +72,29 @@ export default function QuestionContent() {
   const handleSaveQuestion = async (newQuestion: Question) => {
     setLoading(true);
     try {
-      let updatedQuestions;
+      let updatedQuestions: Question[] = [];
       if (selectedQuestion) {
         // Update existing question
-        const retrievedQn = await updateQuestion(
-          selectedQuestion._id,
-          newQuestion
-        );
-        updatedQuestions = questions.map((q) =>
-          q._id === retrievedQn._id ? retrievedQn : q
-        );
+        const result = await updateQuestion(selectedQuestion._id, newQuestion);
+        if (result.success && result.data) {
+          updatedQuestions = questions.map((q) =>
+            q._id === result.data!._id ? result.data! : q
+          );
+          message.success("Question updated successfully.");
+        } else {
+          message.error(result.message || "Failed to update question.");
+          return;
+        }
       } else {
         // Create new question
-        const createdQuestion = await createQuestion(newQuestion);
-        updatedQuestions = [...questions, createdQuestion];
+        const result = await createQuestion(newQuestion);
+        if (result.success && result.data) {
+          updatedQuestions = [...questions, result.data];
+          message.success("Question created successfully.");
+        } else {
+          message.error(result.message || "Failed to create question.");
+          return;
+        }
       }
       setQuestions(updatedQuestions);
       setFilteredQuestions(updatedQuestions);
@@ -82,6 +102,7 @@ export default function QuestionContent() {
       setModalVisible(false);
     } catch (error) {
       console.error("Error saving question", error);
+      message.error("Failed to save question.");
     } finally {
       setLoading(false);
     }
@@ -95,8 +116,10 @@ export default function QuestionContent() {
       setQuestions(updatedQuestions);
       setFilteredQuestions(updatedQuestions);
       setCategories(extractCategories(updatedQuestions));
+      message.success("Question deleted successfully.");
     } catch (error) {
       console.error("Error deleting question", error);
+      message.error("Failed to delete question. Please try again.");
     } finally {
       setLoading(false);
     }
