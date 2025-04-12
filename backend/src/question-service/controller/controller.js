@@ -16,8 +16,7 @@ export const getAllQuestion = async(req, res)=> {
 export const getByTitleQuestion = async(req, res) => {
     try {
         const {title} = req.params;
-        //const question = await Question.find({title: {$regex: title , $options: "i"}})
-        const question = await Question.find({title: req.body.title})
+        const question = await Question.find({title: title});
         res.status(200).json({success : true, data: question});
     } catch(error){
         res.status(500).json({success:false, message: "Server Error"});
@@ -64,7 +63,7 @@ export const deleteQuestion = async (req, res) => {
     }
     try {
         await Question.findByIdAndDelete(id);
-        res.status(200).json({sucess: true, message: "Question deleted!"});
+        res.status(200).json({success: true, message: "Question deleted!"});
 
     }   catch(error) {
         res.status(500).json({success: false, message: "Server Error!"});
