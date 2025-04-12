@@ -1,20 +1,19 @@
 import { LockOutlined, MailOutlined, UserOutlined } from "@ant-design/icons";
-import { Button, Form, Input, Space, Typography, message } from "antd";
+import { App, Button, Form, Input, Space, Typography } from "antd";
 import { useState } from "react";
 import { Link, useNavigate } from "react-router";
+
 import { registerUser } from "../services/auth-services";
+import type { RegisterPayload } from "../types/User";
 
 const { Title, Text } = Typography;
 
 const RegisterContent: React.FC = () => {
+  const { message } = App.useApp();
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const onFinish = async (values: {
-    username: string;
-    email: string;
-    password: string;
-  }) => {
+  const onFinish = async (values: RegisterPayload) => {
     setLoading(true);
     try {
       const result = await registerUser(values);
@@ -76,9 +75,9 @@ const RegisterContent: React.FC = () => {
           name="password"
           rules={[
             { required: true, message: "Please enter your password" },
-            { 
-              min: 12, 
-              message: "Minimum 12 characters required" 
+            {
+              min: 12,
+              message: "Minimum 12 characters required",
             },
             {
               pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{12,}$/,

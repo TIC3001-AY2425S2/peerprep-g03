@@ -1,9 +1,12 @@
-import { message } from "antd";
+import { App } from "antd";
 import { jwtDecode } from "jwt-decode";
 import { createContext, useContext, useEffect, useState } from "react";
+
 import { loginUser as apiLoginUser } from "../services/auth-services";
-import type { AuthContextType } from "../types/AuthContextType";
-import type { UserSession } from "../types/UserSession";
+import type { AuthContext } from "../types/AuthContext";
+import type { JwtPayload } from "../types/JwtPayload";
+import type { LoginPayload } from "../types/User";
+
 import {
   deleteToken,
   getToken,
@@ -11,27 +14,31 @@ import {
   saveToken,
 } from "../utils/auth-utils";
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext = createContext<AuthContext | undefined>(undefined);
 
+// AuthProvider wraps your app and provides auth state to all children
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const { message } = App.useApp();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
-  const [userSession, setUserSession] = useState<UserSession | null>(null);
+  const [jwtPayload, setJwtPayload] = useState<JwtPayload | null>(null);
 
+  // Check if token exists and is still valid
   useEffect(() => {
     const token = getToken();
     if (token && !isTokenExpired(token)) {
-      const decoded = jwtDecode<UserSession>(token);
-      setUserSession(decoded);
+      const decodedJwtPayload = jwtDecode<JwtPayload>(token);
+      setJwtPayload(decodedJwtPayload);
       setIsAuthenticated(true);
     } else {
       deleteToken();
-      setUserSession(null);
+      setJwtPayload(null);
       setIsAuthenticated(false);
     }
     setIsAuthInitialized(true);
   }, []);
 
+  // Set up a timer to auto-logout when token expires
   useEffect(() => {
     const interval = setInterval(() => {
       const token = getToken();
@@ -43,25 +50,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => clearInterval(interval);
   }, []);
 
-  const loginUser = async (credentials: {
-    email: string;
-    password: string;
-  }) => {
-    const result = await apiLoginUser(credentials);
+  // Call login API, store token, decode it, and update state
+  const loginUser = async (loginPayload: LoginPayload) => {
+    const result = await apiLoginUser(loginPayload);
     if (result.success && result.data?.accessToken) {
       saveToken(result.data.accessToken);
 
-      const decoded = jwtDecode<UserSession>(result.data.accessToken);
-      setUserSession(decoded);
+      const decodedJwtPayload = jwtDecode<JwtPayload>(result.data.accessToken);
+      setJwtPayload(decodedJwtPayload);
       setIsAuthenticated(true);
-      return { success: true };
     }
-    return { success: false, message: result.message };
+    return result;
   };
 
+  // Clear session and auth state
   const logoutUser = () => {
     deleteToken();
-    setUserSession(null);
+    setJwtPayload(null);
     setIsAuthenticated(false);
   };
 
@@ -70,7 +75,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       value={{
         isAuthenticated,
         isAuthInitialized,
-        userSession,
+        jwtPayload: jwtPayload,
         loginUser,
         logoutUser,
       }}
@@ -80,7 +85,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
-export const useAuth = (): AuthContextType => {
+// Custom hook to consume AuthContext safely
+export const useAuth = (): AuthContext => {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;

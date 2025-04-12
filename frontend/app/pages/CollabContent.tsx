@@ -1,120 +1,180 @@
-import { Link } from "react-router";
-import { Button, Form, Input, Modal, Select } from "antd";
-import { useState, useEffect } from "react";
-import { io, Socket } from "socket.io-client";
-import { useAuth } from "../contexts/AuthContext";
-import { useParams } from "react-router";
+import { Alert, App, Flex, Layout, Spin } from "antd";
+import { useEffect, useRef, useState } from "react";
+import { useLocation, useNavigate, useParams } from "react-router";
 
-//this save_interval_ms is for cache data
-const SAVE_INTERVAL_MS = 2000;
+import { CollaboratorPanel } from "~/components/collabs/CollaboratorPanel";
+import { EditorPanel } from "~/components/collabs/EditorPanel";
+import type { Question } from "~/types/Question";
+import type { BaseUser } from "~/types/User";
+import { useAuth } from "../contexts/AuthContext";
+import { useCollabSession } from "../hooks/useCollabSession"; // adjust path if needed
+import { fetchQuestionById } from "../services/question-services";
+import { getUserById } from "../services/user-services";
+
+type LocationState = {
+  matchedUserId: string;
+  questionId: string;
+};
 
 export default function CollabContent() {
-    //value is the code data
-    const { userSession } = useAuth();
-    const [value, setValue] = useState('')
-    const [socket, setSocket] = useState<Socket | null>(null)
-    //const {id:collabId} = useParams();
-    //this suppose to be the session id
-    const collabId = "123";
-    const userId = userSession?.id;
-    const [isTyping, setIsTyping] = useState(false); //track user input
-    const [status, setStatus] = useState(false);
+  const navigate = useNavigate();
+  const { modal } = App.useApp();
+  const { sessionId } = useParams<{ sessionId: string }>();
+  const { state } = useLocation();
+  const { matchedUserId, questionId } = (state || {}) as LocationState;
+  const { jwtPayload } = useAuth();
 
-    console.log(collabId);
-    useEffect(() => {
-        const s = io("http://localhost:4002");
-        s.on("connect", () => {
-            s.emit("get-collab", collabId, userId);
-            console.log("Socket connected:", s.id);
-        })
+  const [currentUser, setCurrentUser] = useState<BaseUser>();
+  const [question, setQuestion] = useState<Question>();
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isEndingSession, setIsEndingSession] = useState(false);
 
-        setSocket(s);
+  const editorContainerRef = useRef<HTMLDivElement>(null);
 
-        return () => {
-            s.disconnect();
-        }
-    }, [])
+  // Toggle fullscreen
+  const toggleFullscreen = () => {
+    if (!editorContainerRef.current) return;
 
-    useEffect(() => {
-       if(!socket || !isTyping) return;
-       socket.emit("send-changes", value);
-    }, [value])
-
-    useEffect(()=> {
-        if(!socket) return;
-
-        const interval = setInterval(() => {
-            socket.emit('save-data', value);
-        }, SAVE_INTERVAL_MS)
-
-        return () => {
-            clearInterval(interval);
-        }
-
-    }, [socket, value])
-    
-
-    useEffect(()=>{
-        if(!socket) return;
-        socket.once("load-collab", (collabValue) => {
-            setValue(collabValue);
-        });
-        socket.emit("get-collab", collabId, userId);
-
-        
-    }, [socket, collabId])
-
-    useEffect(()=>{
-        if(!socket) return;
-        socket.on("receive-end-session", (data) => {
-            alert(`User ${data} have decided to leave the session`);
-        })
-    }, [socket])
-
-    useEffect(() => {
-        if(!socket) return;
-
-        const handler = (newValue: string) => {
-            if (!isTyping) {
-                setValue(newValue);
-            }
-        };
-
-        socket.on("receive-changes", handler)
-
-        return () => {
-            socket.off("receive-changes", handler)
-        }
-
-     }, [socket, isTyping])
-
-     useEffect(() => {
-        if(!socket) return;
-
-        if(status == true){
-            socket.emit("send-status", collabId);
-        }
-     }, [socket, status])
-    
-     const handleEndSession = () => {
-        if(!socket) return;
-        socket.emit("send-end-session", socket.id);
+    if (!isFullscreen) {
+      editorContainerRef.current.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
     }
-    
+    setIsFullscreen(!isFullscreen);
+  };
+
+  // Handle fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
+  // Fetch current user
+  useEffect(() => {
+    if (!jwtPayload?.id) return;
+
+    getUserById(jwtPayload.id)
+      .then((res) => {
+        if (res.success && res.data) {
+          setCurrentUser(res.data);
+        } else {
+          console.error("Failed to fetch current user:", res.message);
+          setError("Unable to load user information.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error fetching current user:", err);
+        setError("An error occurred while loading user data.");
+      });
+  }, [jwtPayload]);
+
+  // Fetch question
+  useEffect(() => {
+    if (!questionId) return;
+
+    fetchQuestionById(questionId)
+      .then((result) => {
+        if (result.success && result.data) {
+          setQuestion(result.data);
+        } else {
+          setError(result.message || "Unable to load question data.");
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch question:", err);
+        setError("Unable to load question data.");
+      });
+  }, [questionId]);
+
+  // Yjs + CodeMirror Init
+  const { yTextRef, providerRef, peers, error, setError } = useCollabSession({
+    sessionId,
+    currentUser,
+  });
+
+  const handleEndSession = () => {
+    modal.confirm({
+      title: "End Collaboration Session",
+      content:
+        "Are you sure you want to end this session? All collaborators will be disconnected.",
+      okText: "End Session",
+      okButtonProps: { danger: true },
+      cancelText: "Cancel",
+      onOk: () => {
+        setIsEndingSession(true);
+        providerRef.current?.destroy();
+        setTimeout(() => navigate("/match"), 1000);
+      },
+    });
+  };
+
+  const isNotReady =
+    !sessionId || !matchedUserId || !yTextRef.current || !providerRef.current;
+
+  if (error || isNotReady) {
+    return (
+      <Flex
+        vertical
+        align="center"
+        justify="center"
+        gap={64}
+        style={{ minHeight: "80vh" }}
+      >
+        <Alert
+          style={{ maxWidth: 480 }}
+          message={error ? "Error" : "Initializing Session"}
+          description={
+            error
+              ? error
+              : "Please wait while we connect you to the collaborative editor and load the question data."
+          }
+          type={error ? "error" : "info"}
+          showIcon
+          closable={!!error}
+          onClose={error ? () => setError(null) : undefined}
+        />
+        {!error && <Spin size="large" />}
+      </Flex>
+    );
+  }
+
   return (
-    <div className='App'>
-        <Input.TextArea
-            placeholder="Enter your code here"
-            rows={23}
-            onChange={(e) => {
-                setIsTyping(true)
-                setValue(e.target.value)
-                setTimeout(() => setIsTyping(false), 500)
-            }}
-            value={value}
-         />
-        <Button onClick= {handleEndSession}>End Session</Button>
-    </div>
-    
-  )
+    <Layout hasSider style={{ minHeight: "80vh", position: "relative" }}>
+      <div
+        style={{
+          width: 320,
+          background: "#f5f5f5",
+          borderRight: "1px solid #eee",
+          height: "100%",
+          padding: "12px",
+          position: "absolute",
+          overflow: "auto",
+        }}
+      >
+        <CollaboratorPanel
+          currentUser={currentUser}
+          peers={peers}
+          question={question}
+          onEndSession={handleEndSession}
+          isEndingSession={isEndingSession}
+        />
+      </div>
+
+      {!isNotReady && (
+        <EditorPanel
+          isFullscreen={isFullscreen}
+          yTextRef={yTextRef}
+          providerRef={providerRef}
+          editorContainerRef={editorContainerRef}
+          toggleFullscreen={toggleFullscreen}
+        />
+      )}
+    </Layout>
+  );
 }
