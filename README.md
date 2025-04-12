@@ -99,6 +99,7 @@ Sample DB commands
 docker exec -it mongo-central mongosh -u root -p example
 use peerPrepDB
 db.questions.find().limit(1)
+db.questions.find().count()
 ```
 
 ## Backend
