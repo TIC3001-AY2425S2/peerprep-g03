@@ -51,6 +51,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => clearInterval(interval);
   }, []);
 
+  useEffect(() => {
+    // If the user is not authenticated, no need to track inactivity
+    if (!isAuthenticated) {
+      console.log("User is not authenticated. Skipping inactivity tracking.");
+      return;
+    }
+
+    console.log("Setting up activity tracking...");
+
+    const handleActivity = () => {
+      console.log("User activity detected. Resetting inactivity timer.");
+      setLastActivityTime(Date.now()); // Reset inactivity timer on user activity
+    };
+
+    // List of events to track user activity
+    window.addEventListener("mousemove", handleActivity);
+    window.addEventListener("keydown", handleActivity);
+    // window.addEventListener("click", resetInactivityTimer);
+    // window.addEventListener("scroll", resetInactivityTimer);
+
+    const checkInactivity = setInterval(() => {
+      console.log("Checking inactivity...");
+      if (Date.now() - lastActivityTime > 60 * 60 * 1000) {
+        console.log("User inactive for 1 hour. Logging out...");
+        logoutUser();
+        message.info("You have been logged out due to inactivity.");
+      }
+    }, 10 * 1000); // Check every 10 seconds
+
+    return () => {
+      window.removeEventListener("mousemove", handleActivity);
+      window.removeEventListener("keydown", handleActivity);
+      // window.removeEventListener("click", resetInactivityTimer);
+      // window.removeEventListener("scroll", resetInactivityTimer);
+      clearInterval(checkInactivity);
+      console.log("Inactivity tracking cleared.");
+    };
+  }, [isAuthenticated, lastActivityTime]); // Only track inactivity if the user is logged in
+
   const loginUser = async (credentials: {
     email: string;
     password: string;
