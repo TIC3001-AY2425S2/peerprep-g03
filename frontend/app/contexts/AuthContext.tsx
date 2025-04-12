@@ -22,6 +22,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isAuthInitialized, setIsAuthInitialized] = useState(false);
   const [jwtPayload, setJwtPayload] = useState<JwtPayload | null>(null);
+  const [lastActivityTime, setLastActivityTime] = useState<number>(Date.now());
 
   // Check if token exists and is still valid
   useEffect(() => {
@@ -50,9 +51,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     return () => clearInterval(interval);
   }, []);
 
-  // Call login API, store token, decode it, and update state
-  const loginUser = async (loginPayload: LoginPayload) => {
-    const result = await apiLoginUser(loginPayload);
+  const loginUser = async (credentials: {
+    email: string;
+    password: string;
+  }) => {
+    const result = await apiLoginUser(credentials);
     if (result.success && result.data?.accessToken) {
       saveToken(result.data.accessToken);
 
