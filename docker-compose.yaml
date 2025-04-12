@@ -110,9 +110,11 @@ services:
       - /app/node_modules
     environment:
       - MONGODB_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+      - REDIS_URL=redis://:example@redis:6379
       - PORT=4002
     depends_on:
       - mongo
+      - redis
     networks:
       - app_network
 

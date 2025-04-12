@@ -8,9 +8,6 @@ const collabSchema = new mongoose.Schema({
     data: {
         type: String,
     },
-    userId: {
-        type: String,
-    },
     questionId : {
         type: String,
     }

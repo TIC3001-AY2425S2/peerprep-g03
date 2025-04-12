@@ -2,26 +2,34 @@ import { Link } from "react-router";
 import { Button, Form, Input, Modal, Select } from "antd";
 import { useState, useEffect } from "react";
 import { io, Socket } from "socket.io-client";
+import { useAuth } from "../contexts/AuthContext";
 import { useParams } from "react-router";
 
-
+//this save_interval_ms is for cache data
 const SAVE_INTERVAL_MS = 2000;
 
 export default function CollabContent() {
     //value is the code data
+    const { userSession } = useAuth();
     const [value, setValue] = useState('')
     const [socket, setSocket] = useState<Socket | null>(null)
     //const {id:collabId} = useParams();
     //this suppose to be the session id
     const collabId = "123";
+    const userId = userSession?.id;
     const [isTyping, setIsTyping] = useState(false); //track user input
     const [status, setStatus] = useState(false);
 
     console.log(collabId);
-
     useEffect(() => {
-        const s = io("http://localhost:4002")
+        const s = io("http://localhost:4002");
+        s.on("connect", () => {
+            s.emit("get-collab", collabId, userId);
+            console.log("Socket connected:", s.id);
+        })
+
         setSocket(s);
+
         return () => {
             s.disconnect();
         }
@@ -51,7 +59,7 @@ export default function CollabContent() {
         socket.once("load-collab", (collabValue) => {
             setValue(collabValue);
         });
-        socket.emit("get-collab", collabId);
+        socket.emit("get-collab", collabId, userId);
 
         
     }, [socket, collabId])
@@ -88,7 +96,7 @@ export default function CollabContent() {
         }
      }, [socket, status])
     
-     const endSession = () => {
+     const handleEndSession = () => {
         if(!socket) return;
         socket.emit("send-end-session", socket.id);
     }
@@ -105,7 +113,7 @@ export default function CollabContent() {
             }}
             value={value}
          />
-        <Button onClick= {endSession}>End Session</Button>
+        <Button onClick= {handleEndSession}>End Session</Button>
     </div>
     
   )
