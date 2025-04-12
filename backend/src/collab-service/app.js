@@ -16,6 +16,7 @@ dotenv.config();
 
 const app = express();
 const server = http.createServer(app);
+const SAVE_AND_CHECK_INTERVAL_MS = 5000;
 
 connectDB();
     
@@ -67,7 +68,7 @@ app.use((err, req, res, next) => {
     res.status(500).send('Something broke!');
 });
 
-//periodically save local cache to db
+//periodically save redis cache to db
 setInterval(async () => {
     try{
         const activeSessionIds = await getAllActiveSessionIds();
@@ -78,19 +79,19 @@ setInterval(async () => {
                 const session = await getSession(collabId);
                 if (session) {
                   await saveSessionData(collabId, session.data);
-                  console.log(`Session ${collabId} saved at ${new Date().toISOString()}`);
+                  console.log(`Session ${collabId} saved at ${new Date().toISOString()} to database`);
                 }
               } else {
                 // no active users, remove collabid from activeSession and remove collabdata from redis
                 await removeSessionFromSet(collabId); 
                 await delSessionData(collabId);
-                console.log(`Session ${collabId} removed due to inactivity at ${new Date().toISOString()}`);
+                console.log(`Session ${collabId} removed due to inactivity in the session at ${new Date().toISOString()}`);
               }
         }
 
     }catch (err){
         console.error("Error during periodic cleanup/save", err);
     }
-}, 5000);
+}, SAVE_AND_CHECK_INTERVAL_MS);
 
 export {io, app, server};

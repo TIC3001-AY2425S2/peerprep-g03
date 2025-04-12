@@ -27,11 +27,22 @@ const joinCollabSession = async (collabId) => {
 
 
 const createNewOrJoinCollabSession = async (collabId) => {
-    console.log(`collab id : ${collabId}`);
     if(collabId == null) return;
-    const collabData = await Collab.findById(collabId);
-    if(collabData) return collabData;
-    return await Collab.create({ _id: collabId, data: "", questionId: "" });
+    let collabData = await Collab.findById(collabId);
+    if(collabData !== null) return collabData;
+
+    try{
+        collabData = await Collab.create({ _id: collabId, data: "", questionId: "" });
+        return collabData;
+    } catch (error){
+        //if duplicate
+        if (error.code === 11000) {
+            console.log(`Duplicate session creation attempted for ${collabId}, returning existing session.`);
+            return await Collab.findById(collabId);
+        }
+
+        throw error;
+    }
 }
 
 const saveSessionData = async (collabId, saveData) => {
