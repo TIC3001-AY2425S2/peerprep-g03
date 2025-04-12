@@ -7,7 +7,7 @@ let channel = null
 export const getConnection = ()=> connection;
 export const getChannel = () => channel;
 const sleep = (ms) => new Promise (resolve => setTimeout(resolve, ms));
-export const connect = async (retries = 5, retryDelay = 5000) => {
+export const connect = async (retries = 5, retryDelay = 10000) => {
     for (let attempt = 1; attempt <= retries; attempt++) {
         try {
             console.log('Coonnecting to RabbitMQ Server. Attempt: ', attempt);
@@ -19,7 +19,7 @@ export const connect = async (retries = 5, retryDelay = 5000) => {
         catch (error) {
             console.error('Failed to connect to RabbitMQ Server: ', error);
             if(attempt < retries){
-                console.log('Retrying in 5 seconds');
+                console.log('Retrying in 10 seconds');
                 await sleep(retryDelay);
             }
         }
