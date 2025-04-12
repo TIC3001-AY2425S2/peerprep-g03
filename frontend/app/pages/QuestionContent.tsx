@@ -1,5 +1,6 @@
 import { App } from "antd";
 import type { TablePaginationConfig } from "antd/es/table";
+import { message } from "antd";
 import { useEffect, useState } from "react";
 
 import QuestionModal from "../components/questions/QuestionModal";
@@ -10,6 +11,7 @@ import {
   deleteQuestion,
   fetchQuestions,
   updateQuestion,
+  fetchQuestionById
 } from "../services/question-services";
 import type { Question } from "../types/Question";
 import { extractCategories } from "../utils/question-utils";
@@ -69,6 +71,21 @@ export default function QuestionContent() {
     setModalVisible(true);
   };
 
+  // Helper function to check whether 2 categories arrays are equal. Order does not matter
+  const isCategoriesEqual = (categories1: string[], categories2: string[]): boolean => {
+    // Check if lengths are equal
+    if (categories1.length !== categories2.length) {
+      return false;
+    }
+  
+    // Sort both arrays by alphabetical order and compare their elements
+    const sortedCategories1 = [...categories1].sort();
+    const sortedCategories2 = [...categories2].sort();
+  
+    // Check if each element is the same
+    return sortedCategories1.every((category, index) => category === sortedCategories2[index]);
+  };
+
   const handleSaveQuestion = async (newQuestion: Question) => {
     setLoading(true);
     try {
@@ -100,6 +117,13 @@ export default function QuestionContent() {
       setFilteredQuestions(updatedQuestions);
       setCategories(extractCategories(updatedQuestions));
       setModalVisible(false);
+      
+      // Display success notification if question is added/updated successfully
+      message.success(
+        selectedQuestion
+          ? `Question titled "${newQuestion.title}" has been successfully updated!`
+          : `Question titled "${newQuestion.title}" has been successfully created!`
+      );
     } catch (error) {
       console.error("Error saving question", error);
       message.error("Failed to save question.");
@@ -111,6 +135,7 @@ export default function QuestionContent() {
   const handleDeleteQuestion = async (id: string) => {
     setLoading(true);
     try {
+      const deletedQuestion = await fetchQuestionById(id);
       await deleteQuestion(id);
       const updatedQuestions = questions.filter((q) => q._id !== id);
       setQuestions(updatedQuestions);
