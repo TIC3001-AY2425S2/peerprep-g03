@@ -1,4 +1,4 @@
-import { ConfigProvider } from "antd";
+import { App as AntDApp, ConfigProvider } from "antd";
 import {
   Links,
   Meta,
@@ -12,7 +12,6 @@ import { AuthProvider } from "./contexts/AuthContext";
 import MainLayout from "./layouts/MainLayout";
 import "./styles/app.css";
 import { themeConfig } from "./styles/theme";
-
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
@@ -47,9 +46,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <ConfigProvider theme={themeConfig}>
-      <AuthProvider>
-        <MainLayout />
-      </AuthProvider>
+      <AntDApp>
+        <AuthProvider>
+          <MainLayout />
+        </AuthProvider>
+      </AntDApp>
     </ConfigProvider>
   );
 }
