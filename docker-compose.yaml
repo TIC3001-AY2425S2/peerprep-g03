@@ -1,16 +1,71 @@
 services:
-  mongo:
+
+  mongo-user:
     image: mongo:latest
-    container_name: mongo_db
+    container_name: mongo-user
+    volumes:
+      - mongo_user:/data/db
     ports:
       - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-      - ./local/init.js:/docker-entrypoint-initdb.d/init.js:ro
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
       MONGO_INITDB_DATABASE: peerPrepDB
+    networks:
+      - app_network
+
+  mongo-question:
+    image: mongo:latest
+    container_name: mongo-question
+    volumes:
+      - mongo_question:/data/db
+      - ./local/init.js:/docker-entrypoint-initdb.d/init.js:ro
+    ports:
+      - "27018:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: peerPrepDB
+    networks:
+      - app_network
+
+  mongo-collab:
+    image: mongo:latest
+    container_name: mongo-collab
+    volumes:
+      - mongo_collab:/data/db
+    ports:
+      - "27019:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: peerPrepDB
+    networks:
+      - app_network
+
+  mongo-central:
+    image: mongo:latest
+    container_name: mongo-central
+    volumes:
+      - mongo_central:/data/db
+    ports:
+      - "27020:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_DATABASE: peerPrepDB
+    networks:
+      - app_network
+
+  mongo-sync:
+    build: ./sync-service
+    container_name: mongo-sync
+    volumes:
+      - ./sync-service/scripts:/sync-scripts
+    depends_on:
+      - mongo-user
+      - mongo-question
+      - mongo-central
     networks:
       - app_network
 
@@ -35,15 +90,34 @@ services:
       retries: 5
       start_period: 30s
 
-  redis:
+  redis-match:
     image: redis:7.4-alpine
+    container_name: redis-match
     command: ["redis-server", "--requirepass", "example"]
     ports:
       - "6379:6379"
     environment:
       - REDIS_PASSWORD=example
     volumes:
-      - redis_data:/data
+      - redis_match:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    networks:
+      - app_network
+
+  redis-collab:
+    image: redis:7.4-alpine
+    container_name: redis-collab
+    command: ["redis-server", "--requirepass", "example"]
+    ports:
+      - "6380:6379"
+    environment:
+      - REDIS_PASSWORD=example
+    volumes:
+      - redis_collab:/data
     healthcheck:
       test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
       interval: 5s
@@ -58,13 +132,13 @@ services:
       - RABBITMQ_URL=amqp://root:example@rabbitmq:5672
       - MONGODB_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
       - QUESTION_SERVICE_URL=http://question-service:4000
-      - REDIS_URL=redis://:example@redis:6379
+      - REDIS_URL=redis://:example@redis-match:6379
     ports:
       - "8080:8080"
     depends_on:
       - rabbitmq
       - question-service
-      - redis
+      - redis-match
     networks:
       - app_network
 
@@ -77,10 +151,10 @@ services:
       - ./backend/src/question-service:/app
       - /app/node_modules
     environment:
-      - MONGODB_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+      - MONGODB_URI=mongodb://root:example@mongo-question:27017/peerPrepDB?authSource=admin
       - PORT=4000
     depends_on:
-      - mongo
+      - mongo-question
     networks:
       - app_network
 
@@ -93,10 +167,10 @@ services:
       - ./backend/src/user-service:/app
       - /app/node_modules
     environment:
-      - DB_LOCAL_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
+      - DB_LOCAL_URI=mongodb://root:example@mongo-user:27017/peerPrepDB?authSource=admin
       - PORT=4001
     depends_on:
-      - mongo
+      - mongo-user
     networks:
       - app_network
 
@@ -109,12 +183,12 @@ services:
       - ./backend/src/collab-service:/app
       - /app/node_modules
     environment:
-      - MONGODB_URI=mongodb://root:example@mongo:27017/peerPrepDB?authSource=admin
-      - REDIS_URL=redis://:example@redis:6379
+      - MONGODB_URI=mongodb://root:example@mongo-collab:27017/peerPrepDB?authSource=admin
+      - REDIS_URL=redis://:example@redis-collab:6379
       - PORT=4002
     depends_on:
-      - mongo
-      - redis
+      - mongo-collab
+      - redis-collab
     networks:
       - app_network
 
@@ -143,6 +217,10 @@ networks:
     driver: bridge
 
 volumes:
-  mongo_data:
   rabbitmq_data:
-  redis_data:
+  mongo_user:
+  mongo_question:
+  mongo_collab:
+  mongo_central:
+  redis_match:
+  redis_collab:
