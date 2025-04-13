@@ -1,4 +1,4 @@
-export interface UserSession {
+export interface JwtPayload {
   id: string;
   iat: number;
   exp: number;

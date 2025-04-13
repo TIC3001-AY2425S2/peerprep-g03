@@ -1,11 +1,43 @@
 import { ReadyState } from "react-use-websocket";
-import type { MatchWebSocketMessage } from "../types/MatchMessage";
+import type {
+  MatchCancelledMessage,
+  MatchFoundMessage,
+  MatchTimeoutMessage,
+  MatchWebSocketMessage,
+} from "../types/MatchMessage";
 
 type HandleMatchMessageParams = {
   message: MatchWebSocketMessage;
-  onMatched: (userId: string) => void;
-  onTimeout: (msg?: string) => void;
-  onCancelled: () => void;
+  onMatched: (msg: MatchFoundMessage) => void;
+  onTimeout: (msg: MatchTimeoutMessage) => void;
+  onCancelled: (msg: MatchCancelledMessage) => void;
+};
+
+export const isWebSocketConnected = (readyState: ReadyState) =>
+  readyState === ReadyState.OPEN;
+
+export const handleMatchMessage = ({
+  message,
+  onMatched,
+  onTimeout,
+  onCancelled,
+}: HandleMatchMessageParams) => {
+  switch (message.type) {
+    case "MATCH_FOUND":
+      onMatched(message);
+      break;
+    case "MATCH_TIMEOUT":
+      onTimeout(message);
+      break;
+    case "CANCELLED":
+      onCancelled(message);
+      break;
+    case "CONNECTION_ESTABLISHED":
+      console.info("WebSocket connection established:", message.timestamp);
+      break;
+    default:
+      console.warn("Unhandled WebSocket message:", message);
+  }
 };
 
 export const createStartMatchPayload = ({
@@ -24,27 +56,3 @@ export const createStartMatchPayload = ({
     difficulty,
   },
 });
-
-export const isWebSocketConnected = (readyState: ReadyState) =>
-  readyState === ReadyState.OPEN;
-
-export const handleMatchMessage = ({
-  message,
-  onMatched,
-  onTimeout,
-  onCancelled,
-}: HandleMatchMessageParams) => {
-  switch (message.type) {
-    case "MATCH_FOUND":
-      onMatched(message.match?.userId || "Unknown");
-      break;
-    case "MATCH_TIMEOUT":
-      onTimeout(message.message);
-      break;
-    case "MATCH_CANCELLED":
-      onCancelled();
-      break;
-    default:
-      console.warn("Unhandled WebSocket message:", message);
-  }
-};
