@@ -36,20 +36,10 @@ export const setupQueueAndExchange = async () => {
             durable: true,
             arguments: {
                 'x-message-ttl': RABBITMQ_CONFIG.TTL,
-                'x-dead-letter-exchange': RABBITMQ_CONFIG.EXCHANGES.DEAD_LETTER,
-                'x-dead-letter-routing-key': RABBITMQ_CONFIG.ROUTING_KEYS.EXPIRED,
                 'x-max-priority': RABBITMQ_CONFIG.PRIORITY.LOW
             }
         })
     ]);
-
-    await channel.assertExchange(RABBITMQ_CONFIG.EXCHANGES.DEAD_LETTER, RABBITMQ_CONFIG.DIRECT_VALUE, { durable: true });
-    await channel.assertQueue(RABBITMQ_CONFIG.QUEUES.EXPIRED, { durable: true });
-    await channel.bindQueue(
-        RABBITMQ_CONFIG.QUEUES.EXPIRED,
-        RABBITMQ_CONFIG.EXCHANGES.DEAD_LETTER,
-        RABBITMQ_CONFIG.ROUTING_KEYS.EXPIRED
-    );
 
     await Promise.all([
         channel.bindQueue(
