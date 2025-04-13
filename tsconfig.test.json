@@ -1,0 +1,9 @@
+{
+    "extends": "./frontend/tsconfig.json",
+    "compilerOptions": {
+      "jsx": "react-jsx" // Ensure this is set for tests
+    },
+    "include": [
+      "nfr-test/**/*" // Include your test files
+    ]
+}
