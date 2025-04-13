@@ -7,5 +7,10 @@ export interface Question {
   description: string;
   categories: string[];
   complexity: "Easy" | "Medium" | "Hard";
-  //link?: string;
 }
+
+export type CreateQuestionPayload = Question;
+export type CreateQuestionResponse = Question;
+
+export type UpdateQuestionPayload = Partial<Omit<Question, "_id">>;
+export type UpdateQuestionResponse = Question;

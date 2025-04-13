@@ -5,6 +5,15 @@ import {randomUUID} from 'crypto'
 
 export const notifyMatchFound = async (userId1, userId2, topic, difficulty) => {
     console.log(`Notifying users ${userId1} and ${userId2} of match details`);
+    const ws1 = clientStore.get(userId1);
+    const ws2 = clientStore.get(userId2);
+
+    if (!ws1 || !ws2 ||
+        ws1.readyState !== WebSocketStatus.OPEN ||
+        ws2.readyState !== WebSocketStatus.OPEN) {
+        console.log('One or both users disconnected');
+        return;
+    }
     const questionId = await getRandomQuestion(topic, difficulty);
     const sessionId = randomUUID();
     await Promise.all([userId1, userId2].forEach(userId => {

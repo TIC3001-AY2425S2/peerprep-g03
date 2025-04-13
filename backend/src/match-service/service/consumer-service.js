@@ -9,20 +9,18 @@ export const initConsumers = () => {
 
     channel.consume(RABBITMQ_CONFIG.QUEUES.EXACT,
         msg => processQueueMessage(msg, RABBITMQ_CONFIG.QUEUES.EXACT),
-        { noAck: false }
+        { noAck: true }
     );
 
     channel.consume(RABBITMQ_CONFIG.QUEUES.TOPIC,
         msg => processQueueMessage(msg, RABBITMQ_CONFIG.QUEUES.TOPIC),
-        { noAck: false }
+        { noAck: true  }
     );
 
     channel.consume(RABBITMQ_CONFIG.QUEUES.DIFFICULTY,
         msg => processQueueMessage(msg, RABBITMQ_CONFIG.QUEUES.DIFFICULTY),
-        { noAck: false }
+        { noAck: true }
     );
-
-    channel.consume(RABBITMQ_CONFIG.QUEUES.EXPIRED, processExpiredMatch, { noAck: false });
 
     console.log('All consumers initialized');
 };
@@ -60,9 +58,16 @@ const processQueueMessage = async (msg, queueType) => {
 
                 const [candidateId] = otherUsers;
                 const candidateKey = `match:${queueType}:${candidateId}`;
-                const candidateData = JSON.parse(await command.get(candidateKey));
 
-                if (isMatch(content, candidateData, queueType)) {
+                // Check for null candidateData
+                const candidateDataRaw = await command.get(candidateKey);
+                if (!candidateDataRaw) {
+                    await command.UNWATCH();
+                    continue;
+                }
+                const candidateData = JSON.parse(candidateDataRaw);
+
+                if (content && candidateData && isMatch(content, candidateData, queueType)) {
                     await command.multi()
                         .sRem(userSetKey, userId)
                         .sRem(userSetKey, candidateId)
@@ -70,21 +75,17 @@ const processQueueMessage = async (msg, queueType) => {
                         .exec();
 
                     await notifyMatchFound(userId, candidateId, topic, difficulty);
-                    channel.ack(msg);
-                    channel.ack(candidateData.msg);
                     return;
                 }
 
                 await command.UNWATCH();
                 await new Promise(resolve => setTimeout(resolve, 100));
             } catch (error) {
-                if (error instanceof WatchError) continue;
-                throw error;
+                console.error("Error in watch: ", error)
             }
         }
     } catch (error) {
         console.error(`Error processing message:`, error);
-        channel.nack(msg, false, false);
     }
 };
 

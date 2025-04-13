@@ -1,5 +1,5 @@
 import { jwtDecode } from "jwt-decode";
-import type { UserSession } from "../types/UserSession";
+import type { JwtPayload } from "../types/JwtPayload";
 
 const TOKEN_KEY = "token";
 
@@ -36,7 +36,7 @@ export const isAuthenticated = (): boolean => {
  */
 export const isTokenExpired = (token: string): boolean => {
   try {
-    const decoded = jwtDecode<UserSession>(token);
+    const decoded = jwtDecode<JwtPayload>(token);
     return decoded.exp * 1000 < Date.now();
   } catch {
     return true;
@@ -51,7 +51,7 @@ export const getUserIdFromToken = (): string | null => {
   if (!token) return null;
 
   try {
-    const decoded = jwtDecode<UserSession>(token);
+    const decoded = jwtDecode<JwtPayload>(token);
     return decoded.id;
   } catch {
     return null;

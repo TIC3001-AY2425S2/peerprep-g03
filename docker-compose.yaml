@@ -192,6 +192,20 @@ services:
     networks:
       - app_network
 
+  collab-service-yjs:
+    build:
+      context: ./backend/src/collab-service-yjs
+    ports:
+      - "1234:1234"
+    volumes:
+      - ./backend/src/collab-service:/app
+      - /app/node_modules
+    environment:
+      - HOST=0.0.0.0
+      - PORT=1234
+    networks:
+      - app_network
+
   frontend:
     container_name: peerprep_frontend
     build:

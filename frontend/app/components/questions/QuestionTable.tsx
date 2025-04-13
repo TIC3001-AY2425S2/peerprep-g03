@@ -85,7 +85,7 @@ export default function QuestionTable({
     <Table
       columns={columns}
       dataSource={questions}
-      rowKey="id"
+      rowKey="_id"
       pagination={pagination}
       loading={loading}
       onChange={(paginationConfig) => onPaginationChange(paginationConfig)}
