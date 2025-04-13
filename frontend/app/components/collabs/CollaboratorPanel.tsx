@@ -117,6 +117,11 @@ function QuestionSection({ question }: { question: Question }) {
         <Tag color="blue">{question.complexity}</Tag>
         <Tag color="green">Python</Tag>
       </Flex>
+      <Flex gap = {2}>
+        {question.categories.map((category, index) => (
+            <Tag key = {index} color="yellow">{category}</Tag>
+        ))}
+      </Flex>
     </div>
   );
 }
