@@ -5,6 +5,7 @@ export default function (socket, io) {
     socket.on("get-collab", async (collabId, userId) => {
         const checkSessionData = await getSessionData(collabId);
         if(!checkSessionData){
+            console.log(`no reddis cache found for ${collabId} , so adding it to cache`);
             const collabSession = await createNewOrJoinCollabSession(collabId);
             await setSessionData(collabId, collabSession.data);
             await addSessionToSet(collabId);

@@ -1,6 +1,9 @@
-import { Button, Card, Select, Space, Typography, message } from "antd";
+import { App, Button, Card, Select, Space, Typography } from "antd";
 import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router";
 import useWebSocket, { ReadyState } from "react-use-websocket";
+
+import { API_ENDPOINTS } from "~/config";
 import { DIFFICULTY_ORDER } from "../constant";
 import { useAuth } from "../contexts/AuthContext";
 import {
@@ -15,7 +18,9 @@ const { Title, Text } = Typography;
 const { Option } = Select;
 
 const MatchPage: React.FC = () => {
-  const { userSession } = useAuth();
+  const { message } = App.useApp();
+  const navigate = useNavigate();
+  const { jwtPayload: jwtPayload } = useAuth();
   const [topic, setTopic] = useState<string | undefined>(undefined);
   const [difficulty, setDifficulty] = useState<
     (typeof DIFFICULTY_ORDER)[number] | undefined
@@ -26,14 +31,13 @@ const MatchPage: React.FC = () => {
   const [matchedUser, setMatchedUser] = useState<string | null>(null);
 
   const { sendJsonMessage, lastJsonMessage, readyState } =
-    useWebSocket<MatchWebSocketMessage>("ws://localhost:8080/match", {
-      onOpen: () => console.log("WebSocket connected"),
-      onClose: () => console.log("WebSocket closed"),
+    useWebSocket<MatchWebSocketMessage>(API_ENDPOINTS.MATCHS, {
+      onClose: () => console.log("WebSocket connection closed."),
       shouldReconnect: () => true,
     });
 
   const handleFindMatch = () => {
-    if (!userSession?.id) {
+    if (!jwtPayload?.id) {
       return message.error("User not logged in");
     }
 
@@ -42,7 +46,7 @@ const MatchPage: React.FC = () => {
     }
 
     const payload = createStartMatchPayload({
-      userId: userSession.id,
+      userId: jwtPayload.id,
       topic: topic!,
       difficulty: difficulty!,
     });
@@ -54,8 +58,8 @@ const MatchPage: React.FC = () => {
   };
 
   const handleCancelMatch = () => {
-    if (!userSession?.id) return;
-    sendJsonMessage({ type: "CANCEL_MATCH", userId: userSession.id });
+    if (!jwtPayload?.id) return;
+    sendJsonMessage({ type: "CANCEL_MATCH", userId: jwtPayload.id });
     setIsMatching(false);
     setCountdown(null);
   };
@@ -82,17 +86,27 @@ const MatchPage: React.FC = () => {
 
     handleMatchMessage({
       message: lastJsonMessage,
-      onMatched: (userId) => {
-        setMatchedUser(userId);
-        message.success(`Match found with ${userId}`);
+      onMatched: (msg) => {
+        const matchData = msg.match;
+        setMatchedUser(matchData.userId);
+        message.success(`Match found with ${matchData.userId}`);
         setIsMatching(false);
         setCountdown(null);
+
+        navigate(`/collab/${matchData.sessionId}`, {
+          state: {
+            matchedUserId: matchData.userId,
+            questionId: matchData.questionId,
+          },
+        });
       },
+
       onTimeout: (msg) => {
-        message.warning(msg || "Match timeout");
+        message.warning(msg.message || "Match timeout");
         setIsMatching(false);
         setCountdown(null);
       },
+
       onCancelled: () => {
         message.info("Matchmaking successfully cancelled");
         setIsMatching(false);
@@ -106,7 +120,11 @@ const MatchPage: React.FC = () => {
     const loadCategories = async () => {
       try {
         const result = await fetchQuestionCategories();
-        setCategories(result);
+        if (result.success && Array.isArray(result.data)) {
+          setCategories(result.data);
+        } else {
+          message.error(result.message || "Failed to load topics.");
+        }
       } catch (err) {
         console.error("Failed to fetch categories", err);
         message.error("Failed to load topics.");
@@ -176,7 +194,7 @@ const MatchPage: React.FC = () => {
               size="large"
               block
               onClick={handleFindMatch}
-              disabled={!userSession || !topic || !difficulty}
+              disabled={!jwtPayload || !topic || !difficulty}
             >
               Find Match
             </Button>
