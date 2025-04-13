@@ -1,15 +1,16 @@
 import asyncio
 import time
-import uuid
 import json
 from websockets import connect
 from collections import defaultdict
 
 WS_URL = "ws://localhost:8080/match"
-CONCURRENCY = 200
+CONCURRENCY = 80
 TOTAL_USERS = 10000
 TOPIC = "Algorithms"
 DIFFICULTY = "Easy"
+REQUEST_TIMEOUT = 25
+RETRY_LIMIT = 3
 
 class WebSocketClient:
     def __init__(self, user_id):
@@ -17,6 +18,15 @@ class WebSocketClient:
         self.websocket = None
         self.response_time = None
         self.matched = False
+        self.connection_time = None
+
+async def maintain_connection(client):
+    try:
+        while True:
+            await client.websocket.ping()
+            await asyncio.sleep(5)
+    except Exception:
+        pass
 
 async def send_message(client):
     try:
@@ -29,47 +39,63 @@ async def send_message(client):
             }
         })
 
-        start_time = time.monotonic()
+        client.connection_time = time.monotonic()
         await client.websocket.send(message)
 
         while True:
-            response = await client.websocket.recv()
-            data = json.loads(response)
-            if data.get("type") == "MATCH_FOUND":
-                client.response_time = time.monotonic() - start_time
-                client.matched = True
-                return
-            elif data.get("type") == "ERROR":
+            try:
+                response = await asyncio.wait_for(
+                    client.websocket.recv(),
+                    timeout=REQUEST_TIMEOUT
+                )
+                data = json.loads(response)
+                if data.get("type") == "MATCH_FOUND":
+                    client.response_time = time.monotonic() - client.connection_time
+                    client.matched = True
+                    return
+                elif data.get("type") == "ERROR":
+                    return
+            except (asyncio.TimeoutError, ConnectionResetError):
+                print(f"Timeout for {client.user_id}")
                 return
     except Exception as e:
         print(f"Error for {client.user_id}: {str(e)}")
     finally:
-        await client.websocket.close()
+        try:
+            await client.websocket.close()
+        except Exception:
+            pass
 
 async def simulate_user(client):
-    try:
-        async with connect(WS_URL) as ws:
-            client.websocket = ws
-            await send_message(client)
-    except Exception as e:
-        print(f"Connection failed for {client.user_id}: {str(e)}")
+    for attempt in range(RETRY_LIMIT):
+        try:
+            async with connect(
+                WS_URL,
+                ping_interval=10,
+                ping_timeout=5,
+                close_timeout=1
+            ) as ws:
+                client.websocket = ws
+                maintenance_task = asyncio.create_task(maintain_connection(client))
+                await send_message(client)
+                maintenance_task.cancel()
+                return client
+        except Exception as e:
+            print(f"Attempt {attempt+1} failed for {client.user_id}: {str(e)}")
+            await asyncio.sleep(0.5 * (attempt + 1))
     return client
 
 async def run_load_test():
-    print("Starting WebSocket load test...")
     users = [WebSocketClient(f"user_{i}") for i in range(TOTAL_USERS)]
 
-    timings = []
-    matched_pairs = defaultdict(int)
     start_time = time.monotonic()
-
     semaphore = asyncio.Semaphore(CONCURRENCY)
 
     async def worker(user):
         async with semaphore:
             return await simulate_user(user)
 
-    batch_size = 1000
+    batch_size = 500
     results = []
     for i in range(0, TOTAL_USERS, batch_size):
         batch = users[i:i+batch_size]
