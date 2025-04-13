@@ -9,17 +9,17 @@ export const initConsumers = () => {
 
     channel.consume(RABBITMQ_CONFIG.QUEUES.EXACT,
         msg => processQueueMessage(msg, RABBITMQ_CONFIG.QUEUES.EXACT),
-        { noAck: false }
+        { noAck: true }
     );
 
     channel.consume(RABBITMQ_CONFIG.QUEUES.TOPIC,
         msg => processQueueMessage(msg, RABBITMQ_CONFIG.QUEUES.TOPIC),
-        { noAck: false }
+        { noAck: true  }
     );
 
     channel.consume(RABBITMQ_CONFIG.QUEUES.DIFFICULTY,
         msg => processQueueMessage(msg, RABBITMQ_CONFIG.QUEUES.DIFFICULTY),
-        { noAck: false }
+        { noAck: true }
     );
 
     console.log('All consumers initialized');
@@ -75,7 +75,6 @@ const processQueueMessage = async (msg, queueType) => {
                         .exec();
 
                     await notifyMatchFound(userId, candidateId, topic, difficulty);
-                    channel.ack(msg);
                     return;
                 }
 
@@ -87,7 +86,6 @@ const processQueueMessage = async (msg, queueType) => {
         }
     } catch (error) {
         console.error(`Error processing message:`, error);
-        channel.nack(msg, false, false);
     }
 };
 
