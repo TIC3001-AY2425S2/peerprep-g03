@@ -20,6 +20,7 @@ jobs:
             with:
                 node-version: '18.x'
                 cache: 'npm'
+                cache-dependency-path: backend/package-lock.json
     
           - name: Start MongoDB
             uses: supercharge/mongodb-github-action@1.9.0
