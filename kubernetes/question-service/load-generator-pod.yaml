@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: question-service-loadgen
+  labels:
+    app: question-service-loadgen
+spec:
+  containers:
+  - name: question-service-loadgen
+    image: peerprep-g03-question-service-load-generator:latest
+    imagePullPolicy: Never
+    resources:
+      requests:
+        cpu: "1000m"
+        memory: "1Gi"
+      limits:
+        cpu: "2000m"
+        memory: "2Gi"
