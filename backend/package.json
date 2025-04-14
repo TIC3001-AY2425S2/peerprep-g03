@@ -1,0 +1,41 @@
+{
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "cross-env NODE_ENV=test mocha --timeout 0 --exit",
+    "test-ci": "cross-env NODE_ENV=ci mocha --timeout 0 --exit"
+  },
+  "dependencies": {
+    "@types/chai": "^5.2.1",
+    "axios": "^1.8.4",
+    "chai-http": "^4.4.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mongodb": "^6.15.0",
+    "mongoose": "^8.13.2",
+    "node": "^22.14.0",
+    "testcontainers": "^8.16.0"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.26.9",
+    "@types/jasmine": "^5.1.7",
+    "@types/jest": "^29.5.14",
+    "@types/mocha": "^10.0.10",
+    "@types/supertest": "^6.0.3",
+    "babel-jest": "^29.7.0",
+    "chai": "^5.2.0",
+    "cross-env": "^7.0.3",
+    "esm": "^3.2.25",
+    "jasmine": "^5.6.0",
+    "mocha": "^11.1.0",
+    "mockingoose": "^2.16.2",
+    "mongodb-memory-server": "^10.1.4",
+    "nodemon": "^3.1.9",
+    "supertest": "^7.1.0",
+    "ts-jest": "^29.3.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  }
+}
