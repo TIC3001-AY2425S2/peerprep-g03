@@ -1,0 +1,27 @@
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+
+[project]
+authors = [
+  {email = "waikhin1996@gmail.com", name = "waikhincheong"}
+]
+dependencies = [
+  "aiohttp (>=3.11.16,<4.0.0)"
+]
+description = ""
+name = "question-service-load-generator"
+readme = "README.md"
+requires-python = ">=3.12,<4.0"
+version = "0.1.0"
+
+[tool.poetry]
+package-mode = false
+
+[tool.poetry.group.dev.dependencies]
+toml-sort = "^0.24.2"
+
+[tool.tomlsort]
+all = true
+in_place = true
+no_comments = true

@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: question-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: question-service
+  template:
+    metadata:
+      labels:
+        app: question-service
+    spec:
+      containers:
+        - name: question-service
+          image: peerprep-g03-question-service:latest 
+          imagePullPolicy: Never
+          ports:
+            - containerPort: 4000
+          env:
+          - name: MONGODB_URI
+            value: mongodb://root:example@mongo-question-0.mongo-question.default.svc.cluster.local:27017/peerPrepDB?authSource=admin
+          - name: PORT
+            value: "4000"
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "200Mi"
+            limits:
+              cpu: "500m"
+              memory: "500Mi"
