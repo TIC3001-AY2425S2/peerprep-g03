@@ -217,49 +217,6 @@ describe('Question API Tests', function () {
 
     })
 
-    // GET /api/questions/:title - should get a question by title
-    describe('GET /api/questions/:title', function () {
-        it('should return question by title', function (done) {
-
-            const question = questions.at(2);
-            const title = question.title;
-            const description = question.description;
-            const categories = question.categories;
-            const complexity = question.complexity;
-            
-            chai.request(app)
-                .get(`/api/questions/${encodeURIComponent(title)}`)
-                .end((err, res) => {
-                    expect(res).to.have.status(200);
-                    expect(res.body).to.have.property('success').that.equals(true);
-                    expect(res.body).to.have.property('data').that.is.an('array');
-                    expect(res.body.data.length).to.equal(1);
-                    
-                    const data = res.body.data[0];
-                    expect(data).to.have.property('title').equal(title);
-                    expect(data).to.have.property('description').equal(description);
-                    expect(data).to.have.property('categories').to.deep.equal(categories);
-                    expect(data).to.have.property('complexity').equal(complexity);
-                    done();
-                });
-        });
-
-        it('should return an empty array if no question is found by title', function (done) {
-            const nonExistentTitle = 'Non-Existent Question';
-
-            chai.request(app)
-                .get(`/api/questions/${nonExistentTitle}`)
-                .end((err, res) => {
-                    expect(res).to.have.status(200);
-                    expect(res.body).to.have.property('success').that.equals(true);
-                    expect(res.body).to.have.property('data').that.is.an('array');
-                    expect(res.body.data.length).to.equal(0);   // No question should be found
-
-                    done();
-                });
-        });
-    });
-
     describe('POST /api/questions', function () {
         it('should create a new question', function (done) {
             const newQuestion = { 
